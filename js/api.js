@@ -28,6 +28,8 @@
     coToken: function () { hienTai = docToken(); return !!hienTai; },
     emailToken: function () { return hienTai ? hienTai.email : ''; },
     tenToken: function () { return hienTai ? (hienTai.ten || '') : ''; },
+    hetHan: function () { return hienTai ? hienTai.exp * 1000 : 0; },
+    khiThuLai: null,     // app.js gán: báo người dùng đang thử lại khi mạng chập chờn
     datToken: function (jwt) {
       var c = giaiMa(jwt);
       hienTai = { t: jwt, exp: c.exp || 0, email: c.email || '', ten: c.name || '' };
@@ -59,27 +61,38 @@
       }
       var ctl = window.AbortController ? new AbortController() : null;
       var hg = ctl && setTimeout(function () { ctl.abort(); }, HET_GIO);
-      var body = JSON.stringify({ action: action, token: hienTai.t, data: data || {} });
-      var gui = function () {
+      // Mỗi lần gọi có một mã yêu cầu; gửi lại (khi mạng lỗi) dùng lại mã này nên máy chủ không ghi trùng
+      var ma = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'yc-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+      var goi = Object.assign({}, data || {}, { _yc: ma });
+      var body = JSON.stringify({ action: action, token: hienTai.t, data: goi });
+      var cho = function (lan) {
+        return new Promise(function (ok) {
+          var ms = [800, 2000, 4000][lan - 1] || 4000, t0 = Date.now();
+          (function doi() { if (navigator.onLine === false && Date.now() - t0 < 15000) return setTimeout(doi, 500); setTimeout(ok, ms); })();
+        });
+      };
+      var gui = function (lan) {
         return fetch(cfg.API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // "simple request" => không có CORS preflight
           body: body,
           signal: ctl ? ctl.signal : undefined,
           redirect: 'follow'
+        }).then(function (res) {
+          // Google đôi khi trả 404/502/503/504 thoáng qua -> thử lại (tối đa 3 lần)
+          if ([404, 502, 503, 504].indexOf(res.status) >= 0 && lan <= 3) return cho(lan).then(function () { return gui(lan + 1); });
+          return res;
+        }, function (e) {
+          if (e && e.name === 'AbortError') throw e;
+          if (lan <= 3) { if (lan === 1 && API.khiThuLai) API.khiThuLai(); return cho(lan).then(function () { return gui(lan + 1); }); }
+          throw e;
         });
       };
-      // Google đôi khi trả 404/502/503 thoáng qua (chưa chạy mã) -> thử lại 1 lần
-      return gui().then(function (res) {
-        if (res.status === 404 || res.status === 502 || res.status === 503) {
-          return new Promise(function (ok) { setTimeout(ok, 800); }).then(gui);
-        }
-        return res;
-      }).then(function (res) {
+      return gui(1).then(function (res) {
         if (!res.ok) throw new Error('Máy chủ trả lỗi HTTP ' + res.status);
         return res.json();
       }, function (e) {
-        throw new Error(e && e.name === 'AbortError' ? 'Máy chủ phản hồi quá lâu, thử lại sau.' : 'Không kết nối được máy chủ. Kiểm tra mạng.');
+        throw new Error(e && e.name === 'AbortError' ? 'Máy chủ phản hồi quá lâu, thử lại sau.' : 'Không kết nối được máy chủ. Kiểm tra mạng rồi bấm lại.');
       }).then(function (r) {
         if (hg) clearTimeout(hg);
         if (!r.ok) {
