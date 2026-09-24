@@ -59,12 +59,22 @@
       }
       var ctl = window.AbortController ? new AbortController() : null;
       var hg = ctl && setTimeout(function () { ctl.abort(); }, HET_GIO);
-      return fetch(cfg.API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // "simple request" => không có CORS preflight
-        body: JSON.stringify({ action: action, token: hienTai.t, data: data || {} }),
-        signal: ctl ? ctl.signal : undefined,
-        redirect: 'follow'
+      var body = JSON.stringify({ action: action, token: hienTai.t, data: data || {} });
+      var gui = function () {
+        return fetch(cfg.API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // "simple request" => không có CORS preflight
+          body: body,
+          signal: ctl ? ctl.signal : undefined,
+          redirect: 'follow'
+        });
+      };
+      // Google đôi khi trả 404/502/503 thoáng qua (chưa chạy mã) -> thử lại 1 lần
+      return gui().then(function (res) {
+        if (res.status === 404 || res.status === 502 || res.status === 503) {
+          return new Promise(function (ok) { setTimeout(ok, 800); }).then(gui);
+        }
+        return res;
       }).then(function (res) {
         if (!res.ok) throw new Error('Máy chủ trả lỗi HTTP ' + res.status);
         return res.json();
