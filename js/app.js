@@ -1307,7 +1307,7 @@
     });
   }
 
-  var daKhoiTaoGIS = false, henGH = null;
+  var daKhoiTaoGIS = false;
   function khoiTaoGIS() {
     return napGIS().then(function () {
       if (daKhoiTaoGIS) return;
@@ -1321,21 +1321,17 @@
   function khiCoTheDangNhap(res) {
     var emailCu = S.user && S.user.Email;
     API.datToken(res.credential);
-    $('#loginWrap').hidden = true;
-    henGiaHan();
-    if (!S.user) return vaoHeThong();
-    if (API.emailToken() && API.emailToken() !== emailCu) return location.reload();   // đổi sang tài khoản khác
-    toast('Đã gia hạn phiên đăng nhập. Dữ liệu đang nhập vẫn giữ nguyên.');
+    // Đổi Google ID token (1 giờ) lấy phiên làm việc của hệ thống (tự gia hạn khi còn thao tác)
+    taoPhien().then(function () {
+      $('#loginWrap').hidden = true;
+      if (!S.user) return vaoHeThong();
+      if (API.emailToken() && API.emailToken() !== emailCu) return location.reload();   // đổi sang tài khoản khác
+      toast('Đã đăng nhập lại. Dữ liệu đang nhập vẫn giữ nguyên.');
+    });
   }
-  /** Google cấp phiên 1 giờ: 5 phút trước khi hết thì xin phiên mới ngầm (không cần bấm gì nếu trình duyệt cho phép). */
-  function henGiaHan() {
-    clearTimeout(henGH);
-    if (API.cheDo !== 'may-chu' || !API.hetHan()) return;
-    henGH = setTimeout(giaHanNgam, Math.max(API.hetHan() - Date.now() - 5 * 60 * 1000, 30000));
-  }
-  function giaHanNgam() {
-    if (API.cheDo !== 'may-chu' || !CFG.GOOGLE_CLIENT_ID) return;
-    khoiTaoGIS().then(function () { google.accounts.id.prompt(); }).catch(function () {});
+  function taoPhien() {
+    if (API.cheDo !== 'may-chu' || API.coPhien()) return Promise.resolve();
+    return API.goi('taoPhien').then(function (p) { API.datPhien(p.phien, p.hetHanToiDa); }).catch(function () {});
   }
   function manDangNhap(thongBao, loai) {
     var w = $('#loginWrap');
@@ -1353,6 +1349,7 @@
 
   function dangXuat() {
     var em = API.emailToken();
+    if (API.coPhien()) API.goi('dongPhien').catch(function () {});
     API.xoaToken();
     if (window.google && google.accounts && google.accounts.id) {
       google.accounts.id.disableAutoSelect();
@@ -1406,14 +1403,13 @@
   var daGanRoute = false;
   function vaoHeThong() {
     $('#view').innerHTML = '<div class="py-16 text-center text-sm text-muted">Đang tải dữ liệu…</div>';
-    API.goi('batDau', { kem: ['tongQuan', 'dsCoSo', 'dsTamTru'] }).then(function (kq) {
+    taoPhien().then(function () { return API.goi('batDau', { kem: ['tongQuan', 'dsCoSo', 'dsTamTru'] }); }).then(function (kq) {
       ['tongQuan', 'dsCoSo', 'dsTamTru'].forEach(function (k) { if (kq[k]) datDem(k, kq[k]); });
       S.user = kq.toi; S.dm = kq.danhMuc; S.soChoDuyet = kq.soChoDuyet || 0; S.phamVi = kq.phamVi || { toanPhuong: true };
       $('#loginWrap').hidden = true;
       veUser();
       if (!daGanRoute) { window.addEventListener('hashchange', route); daGanRoute = true; }
       route();
-      henGiaHan();
       // Tải ngầm dữ liệu các trang còn lại để lần đầu mở cũng hiện ngay
       setTimeout(function () {
         var viec = [['dsLichSu', 'dsLichSu', { gioiHan: 200 }], ['bc:' + homNay().slice(0, 7), 'baoCaoThang', { thang: homNay().slice(0, 7) }]];
@@ -1436,7 +1432,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '1.7.0';
+  var PB_GIAO_DIEN = '1.8.0';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
@@ -1449,7 +1445,6 @@
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) return;
     kiemTraBanMoi();
-    if (S.user && API.cheDo === 'may-chu' && API.hetHan() - Date.now() < 10 * 60 * 1000) giaHanNgam();
     Object.keys(DEM).forEach(function (k) { DEM[k].t = 0; });
     if (S.user && $('#drawerWrap').hidden && $('#dlgWrap').hidden) route();
   });
@@ -1470,7 +1465,7 @@
       if (daBao) return; daBao = true;
       // Không đóng form đang nhập: màn đăng nhập hiện đè lên, đăng nhập xong quay lại đúng chỗ cũ
       var dangNhap = !$('#drawerWrap').hidden;
-      manDangNhap('Phiên đăng nhập đã hết hạn (Google cấp phiên 1 giờ).' + (dangNhap ? ' Đăng nhập lại để tiếp tục – thông tin đang nhập vẫn được giữ, sau đó bấm Lưu lần nữa.' : ' Vui lòng đăng nhập lại.'));
+      manDangNhap('Phiên làm việc đã hết hạn.' + (dangNhap ? ' Đăng nhập lại để tiếp tục – thông tin đang nhập vẫn được giữ, sau đó bấm Lưu lần nữa.' : ' Vui lòng đăng nhập lại.'));
       setTimeout(function () { daBao = false; }, 3000);
     };
     var daBaoThuLai = 0;
