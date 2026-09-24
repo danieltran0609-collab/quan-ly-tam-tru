@@ -87,11 +87,19 @@
   <div class="flex-1 min-w-0">
     <!-- Thanh trên (điện thoại) -->
     <header class="lg:hidden sticky top-0 z-30 bg-white/85 backdrop-blur border-b border-line px-4 h-14 flex items-center gap-3">
-      <span class="grid place-items-center size-8 rounded-xl bg-gradient-to-br from-[#C9D0FF] to-[#FAD6E6] text-brand-600">
+      <button id="nutLui" type="button" data-lui hidden class="grid place-items-center size-9 -ml-2 rounded-xl text-ink hover:bg-canvas" aria-label="Quay lại trang trước" title="Quay lại">
+        <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <a href="#/tong-quan" class="grid place-items-center size-8 shrink-0 rounded-xl bg-gradient-to-br from-[#C9D0FF] to-[#FAD6E6] text-brand-600" aria-label="Trang chủ">
         <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+      </a>
+      <b id="mTitle" class="text-[15px] truncate">Quản lý Tạm trú</b>
+      <span class="ml-auto flex items-center gap-1">
+        <a id="nutNha" href="#/tong-quan" hidden class="grid place-items-center size-9 rounded-xl text-muted hover:bg-canvas hover:text-ink" aria-label="Về trang chủ" title="Trang chủ">
+          <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+        </a>
+        <span id="userMini"></span>
       </span>
-      <b id="mTitle" class="text-[15px]">Quản lý Tạm trú</b>
-      <span id="userMini" class="ml-auto"></span>
     </header>
 
     <main id="view" class="px-4 sm:px-6 lg:px-10 py-5 lg:py-8 pb-28 lg:pb-10 max-w-[1280px] mx-auto"></main>
@@ -138,8 +146,8 @@
 
 <div id="toasts" class="fixed z-[60] bottom-20 lg:bottom-6 right-4 left-4 sm:left-auto flex flex-col gap-2 items-end pointer-events-none"></div>
 
-<script src="js/config.js?v=2.1.0"></script>
-<script src="js/api.js?v=2.1.0"></script>
-<script src="js/app.js?v=2.1.0"></script>
+<script src="js/config.js?v=2.2.0"></script>
+<script src="js/api.js?v=2.2.0"></script>
+<script src="js/app.js?v=2.2.0"></script>
 </body>
 </html>
