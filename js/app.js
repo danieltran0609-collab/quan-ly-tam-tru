@@ -73,7 +73,7 @@
     { id: 'tong-quan', ten: 'Tổng quan', ic: 'home' },
     { id: 'tam-tru', ten: 'Khách tạm trú', ngan: 'Khách', ic: 'users' },
     { id: 'co-so', ten: 'Cơ sở lưu trú', ngan: 'Cơ sở', ic: 'building' },
-    { id: 'can-bo', ten: 'Cán bộ quản lý', ngan: 'Cán bộ', ic: 'shield' },
+    { id: 'can-bo', ten: 'Cán bộ quản lý', ngan: 'Cán bộ', ic: 'shield', admin: true },
     { id: 'lich-su', ten: 'Lịch sử', ic: 'clock', admin: true }
   ];
 
@@ -183,7 +183,10 @@
       var maxL = Math.max.apply(null, loai.map(function (l) { return t.coSo.theoLoaiHinh[l]; }).concat([1]));
       var cskv = Object.keys(t.coSo.theoCSKV).sort(function (a, b) { return t.coSo.theoCSKV[b].coSo - t.coSo.theoCSKV[a].coSo; });
 
-      var html = dauTrang('Tổng quan', 'Số liệu tính đến ngày ' + vn(t.homNay), duocGhi() ? '<button class="btn-primary" data-them-khach>' + ic('plus') + 'Đăng ký khách</button>' : '') +
+      var pv = S.phamVi || { toanPhuong: true };
+      var moTa = (pv.toanPhuong ? 'Toàn phường' : 'Địa bàn CSKV ' + esc(pv.cskv || '(chưa gắn)') + ' · ' + soVN(pv.soCoSo) + ' cơ sở') + ' · số liệu đến ngày ' + vn(t.homNay);
+      var html = dauTrang('Tổng quan', moTa, duocGhi() && (pv.toanPhuong || pv.soCoSo) ? '<button class="btn-primary" data-them-khach>' + ic('plus') + 'Đăng ký khách</button>' : '') +
+        (!pv.toanPhuong && !pv.soCoSo ? '<div class="flex gap-2 items-start rounded-2xl bg-butter text-butter-ink px-4 py-3 text-sm mb-5">' + ic('alert', 'size-4 mt-0.5 shrink-0') + '<span>Tài khoản của bạn ' + (pv.cskv ? 'gắn CSKV <b>' + esc(pv.cskv) + '</b> nhưng chưa có cơ sở nào mang tên CSKV này' : 'chưa được gắn CSKV') + '. Liên hệ Admin để gắn đúng địa bàn.</span></div>' : '') +
         '<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">' +
         the('Đang lưu trú', t.khach.dangLuuTru, 'người', 'bg-mint text-mint-ink', 'users', '#/tam-tru') +
         the('Sắp hết hạn', k['Sắp hết hạn'], 'người', 'bg-butter text-butter-ink', 'clock', '#/tam-tru/Sắp hết hạn') +
@@ -205,11 +208,11 @@
             '<div class="h-2.5 rounded-full bg-canvas overflow-hidden"><div class="h-full rounded-full ' + (THANH_LOAI[l] || 'bg-[#C5C9D3]') + '" style="width:' + Math.max(4, n / maxL * 100) + '%"></div></div></a>';
         }).join('') + '</section>' +
         '</div>' +
-        // Theo CSKV
-        '<section class="card mt-4 lg:mt-6 overflow-hidden"><header class="px-5 py-4"><h2 class="font-semibold">Theo cảnh sát khu vực</h2><p class="text-[13px] text-muted">Số cơ sở phụ trách và số khách đang lưu trú</p></header>' +
+        // Theo CSKV (chỉ Admin – người khác chỉ có 1 địa bàn)
+        (!pv.toanPhuong ? '' : '<section class="card mt-4 lg:mt-6 overflow-hidden"><header class="px-5 py-4"><h2 class="font-semibold">Theo cảnh sát khu vực</h2><p class="text-[13px] text-muted">Số cơ sở phụ trách và số khách đang lưu trú</p></header>' +
         '<div class="overflow-x-auto scroll-thin"><table class="w-full min-w-[420px]"><thead><tr><th class="th">CSKV</th><th class="th text-right">Cơ sở (cơ sở)</th><th class="th text-right">Khách đang ở (người)</th></tr></thead><tbody>' +
         cskv.map(function (c) { var x = t.coSo.theoCSKV[c]; return '<tr class="hover:bg-canvas/60 cursor-pointer" data-loc-cskv="' + esc(c) + '"><td class="td font-medium">' + esc(c) + '</td><td class="td text-right">' + soVN(x.coSo) + '</td><td class="td text-right">' + soVN(x.khachDangO) + '</td></tr>'; }).join('') +
-        '</tbody></table></div></section>';
+        '</tbody></table></div></section>');
       v.innerHTML = html;
     }).catch(function () { if (luot === S.luot) v.innerHTML = dauTrang('Tổng quan') + trong('Không tải được dữ liệu', 'Kiểm tra kết nối rồi tải lại trang.'); });
   }
@@ -432,7 +435,7 @@
     v.innerHTML = dauTrang('Cơ sở lưu trú', 'Nhà trọ, nhà nghỉ, nhà cho thuê, khách sạn trên địa bàn', duocGhi() ? '<button class="btn-primary" data-them-coso>' + ic('plus') + 'Thêm cơ sở</button>' : '') +
       '<div class="card p-3 sm:p-4 mb-4 flex flex-col gap-3"><div class="flex flex-col sm:flex-row gap-2">' +
       '<label class="relative flex-1"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted">' + ic('search') + '</span><input id="cQ" class="inp pl-9" placeholder="Tìm tên, địa chỉ, chủ cơ sở, mã…" value="' + esc(S.locCS.q) + '"></label>' +
-      '<div class="grid grid-cols-2 gap-2 sm:flex"><select id="cCSKV" class="inp sm:w-40"></select><select id="cTDP" class="inp sm:w-32"></select></div></div>' +
+      '<div class="grid grid-cols-2 gap-2 sm:flex"><select id="cCSKV" class="inp sm:w-40"' + (S.phamVi && !S.phamVi.toanPhuong ? ' hidden' : '') + '></select><select id="cTDP" class="inp sm:w-32"></select></div></div>' +
       '<div id="cChips" class="flex gap-2 overflow-x-auto scroll-thin -mx-1 px-1 pb-0.5"></div></div><div id="cList">' + khungCho(3) + '</div>';
     napCoSo(true).then(function (ds) {
       if (!$('#cList')) return;   // đã chuyển sang trang khác
@@ -517,7 +520,7 @@
       o('NguoiQuanLy', 'Người quản lý / chủ cơ sở', 'col-span-2 sm:col-span-1') + o('SoDienThoai', 'Số điện thoại', 'col-span-2 sm:col-span-1', 'inputmode="tel"') +
       o('DiaChiNguoiQuanLy', 'Địa chỉ thường trú của chủ cơ sở', 'col-span-2') +
       o('SoLuongPhong', 'Số lượng phòng', '', 'inputmode="numeric"') + o('SoNhanKhauKhaiBao', 'Nhân khẩu khai báo', '', 'inputmode="numeric"') +
-      o('ToDanPho', 'Tổ dân phố', '', 'inputmode="numeric"') + o('CSKV', 'CSKV phụ trách', '', 'list="dsCSKV"') +
+      o('ToDanPho', 'Tổ dân phố', '', 'inputmode="numeric"') + (laAdmin() ? o('CSKV', 'CSKV phụ trách', '', 'list="dsCSKV"') : '<div><label class="lbl" for="CSKV">CSKV phụ trách</label><input id="CSKV" name="CSKV" class="inp bg-canvas text-muted" readonly value="' + esc(moi ? S.user.CSKV : c.CSKV) + '" title="Chỉ Admin được đổi CSKV"></div>') +
       '<datalist id="dsCSKV">' + (S.coSo || []).map(function (x) { return x.CSKV; }).filter(function (x, i, a) { return x && a.indexOf(x) === i; }).map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>' +
       '<label class="col-span-2 flex items-center gap-2 text-sm mt-1"><input type="checkbox" name="KiemTra092026" class="size-4 accent-[#6C7BF2]"' + (c.KiemTra092026 === true ? ' checked' : '') + '> Đã kiểm tra đợt 9/2026</label>' +
       '<div class="col-span-2"><label class="lbl" for="GhiChuCS">Ghi chú</label><textarea id="GhiChuCS" name="GhiChu" rows="2" class="inp h-auto py-2">' + esc(c.GhiChu) + '</textarea></div>' +
@@ -662,7 +665,7 @@
     window.scrollTo(0, 0);
     if (h[0] === 'tam-tru') return trangTamTru(h[1] !== undefined ? h[1] : undefined);
     if (h[0] === 'co-so') return trangCoSo();
-    if (h[0] === 'can-bo') return trangCanBo();
+    if (h[0] === 'can-bo' && laAdmin()) return trangCanBo();
     if (h[0] === 'lich-su' && laAdmin()) return trangLichSu();
     return trangTongQuan();
   }
@@ -782,7 +785,7 @@
   function vaoHeThong() {
     $('#view').innerHTML = '<div class="py-16 text-center text-sm text-muted">Đang tải dữ liệu…</div>';
     API.goi('batDau').then(function (kq) {
-      S.user = kq.toi; S.dm = kq.danhMuc; S.soChoDuyet = kq.soChoDuyet || 0;
+      S.user = kq.toi; S.dm = kq.danhMuc; S.soChoDuyet = kq.soChoDuyet || 0; S.phamVi = kq.phamVi || { toanPhuong: true };
       $('#loginWrap').hidden = true;
       veUser();
       if (!daGanRoute) { window.addEventListener('hashchange', route); daGanRoute = true; }
