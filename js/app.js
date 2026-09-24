@@ -170,7 +170,9 @@
   function trangTongQuan() {
     var v = $('#view');
     v.innerHTML = dauTrang('Tổng quan', 'Tình hình lưu trú hôm nay', duocGhi() ? '<button class="btn-primary" data-them-khach>' + ic('plus') + 'Đăng ký khách</button>' : '') + khungCho(4);
+    var luot = S.luot;
     goi('tongQuan').then(function (t) {
+      if (luot !== S.luot) return;   // đã chuyển sang trang khác
       var k = t.khach.theoTrangThai;
       var the = function (nhan, so, donVi, mau, icon, link) {
         return '<a href="' + link + '" class="card p-4 lg:p-5 flex flex-col gap-3 hover:-translate-y-0.5 transition">' +
@@ -209,7 +211,7 @@
         cskv.map(function (c) { var x = t.coSo.theoCSKV[c]; return '<tr class="hover:bg-canvas/60 cursor-pointer" data-loc-cskv="' + esc(c) + '"><td class="td font-medium">' + esc(c) + '</td><td class="td text-right">' + soVN(x.coSo) + '</td><td class="td text-right">' + soVN(x.khachDangO) + '</td></tr>'; }).join('') +
         '</tbody></table></div></section>';
       v.innerHTML = html;
-    }).catch(function () { v.innerHTML = dauTrang('Tổng quan') + trong('Không tải được dữ liệu', 'Kiểm tra kết nối rồi tải lại trang.'); });
+    }).catch(function () { if (luot === S.luot) v.innerHTML = dauTrang('Tổng quan') + trong('Không tải được dữ liệu', 'Kiểm tra kết nối rồi tải lại trang.'); });
   }
 
   // ================= KHÁCH TẠM TRÚ =================
@@ -225,12 +227,13 @@
       '<div id="kChips" class="flex gap-2 overflow-x-auto scroll-thin -mx-1 px-1 pb-0.5"></div></div>' +
       '<div id="kList">' + khungCho(3) + '</div>';
     napCoSo().then(function (cs) {
+      if (!$('#kCS')) return;
       $('#kCS').innerHTML = '<option value="">Tất cả cơ sở</option>' + cs.map(function (c) { return '<option value="' + esc(c.MaCoSo) + '"' + (c.MaCoSo === S.loc.maCoSo ? ' selected' : '') + '>' + esc(c.MaCoSo + ' · ' + c.TenCoSo + ' – ' + c.DiaChi) + '</option>'; }).join('');
     });
     $('#kQ').addEventListener('input', debounce(function (e) { S.loc.q = e.target.value; veDsKhach(); }, 150));
     $('#kCS').addEventListener('change', function (e) { S.loc.maCoSo = e.target.value; veDsKhach(); });
-    goi('dsTamTru', {}).then(function (ds) { dsKhach = ds; veDsKhach(); })
-      .catch(function () { $('#kList').innerHTML = trong('Không tải được danh sách', 'Thử tải lại trang.'); });
+    goi('dsTamTru', {}).then(function (ds) { if (!$('#kList')) return; dsKhach = ds; veDsKhach(); })
+      .catch(function () { if ($('#kList')) $('#kList').innerHTML = trong('Không tải được danh sách', 'Thử tải lại trang.'); });
   }
 
   function veDsKhach() {
@@ -432,11 +435,12 @@
       '<div class="grid grid-cols-2 gap-2 sm:flex"><select id="cCSKV" class="inp sm:w-40"></select><select id="cTDP" class="inp sm:w-32"></select></div></div>' +
       '<div id="cChips" class="flex gap-2 overflow-x-auto scroll-thin -mx-1 px-1 pb-0.5"></div></div><div id="cList">' + khungCho(3) + '</div>';
     napCoSo(true).then(function (ds) {
+      if (!$('#cList')) return;   // đã chuyển sang trang khác
       var uniq = function (k) { var m = {}; ds.forEach(function (c) { if (c[k] !== '') m[c[k]] = 1; }); return Object.keys(m); };
       $('#cCSKV').innerHTML = '<option value="">Mọi CSKV</option>' + uniq('CSKV').sort(function (a, b) { return a.localeCompare(b, 'vi'); }).map(function (c) { return '<option' + (c === S.locCS.cskv ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
       $('#cTDP').innerHTML = '<option value="">Mọi tổ DP</option>' + uniq('ToDanPho').sort(function (a, b) { return a - b; }).map(function (c) { return '<option value="' + esc(c) + '"' + (String(c) === String(S.locCS.tdp) ? ' selected' : '') + '>Tổ ' + esc(c) + '</option>'; }).join('');
       veDsCoSo();
-    }).catch(function () { $('#cList').innerHTML = trong('Không tải được danh sách', 'Thử tải lại trang.'); });
+    }).catch(function () { if ($('#cList')) $('#cList').innerHTML = trong('Không tải được danh sách', 'Thử tải lại trang.'); });
     $('#cQ').addEventListener('input', debounce(function (e) { S.locCS.q = e.target.value; veDsCoSo(); }, 150));
     $('#cCSKV').addEventListener('change', function (e) { S.locCS.cskv = e.target.value; veDsCoSo(); });
     $('#cTDP').addEventListener('change', function (e) { S.locCS.tdp = e.target.value; veDsCoSo(); });
@@ -541,6 +545,7 @@
     var v = $('#view');
     v.innerHTML = dauTrang('Cán bộ quản lý', 'Tài khoản Google được phép đăng nhập và quyền hạn', laAdmin() ? '<button class="btn-primary" data-them-cb>' + ic('plus') + 'Thêm cán bộ</button>' : '') + '<div id="cbList">' + khungCho(3) + '</div>';
     goi('dsCanBo').then(function (ds) {
+      if (!$('#cbList')) return;   // đã chuyển sang trang khác
       dsCB = ds;
       var chua = ds.filter(function (x) { return x.TrangThai === 'Chưa kích hoạt'; }).length;
       var mauQ = { Admin: 'bg-lilac text-lilac-ink', CanBo: 'bg-sky text-sky-ink', Xem: 'bg-fog text-fog-ink' };
@@ -636,6 +641,7 @@
     var v = $('#view');
     v.innerHTML = dauTrang('Lịch sử thao tác', '200 thao tác gần nhất') + '<div id="lsList">' + khungCho(4) + '</div>';
     goi('dsLichSu', { gioiHan: 200 }).then(function (ds) {
+      if (!$('#lsList')) return;
       var mau = { 'Thêm': 'bg-mint text-mint-ink', 'Sửa': 'bg-sky text-sky-ink', 'Xoá': 'bg-rose text-rose-ink', 'Tải tệp': 'bg-lilac text-lilac-ink' };
       var tenBang = { DanhSachTamTru: 'Khách', CoSoLuuTru: 'Cơ sở', CanBoQuanLy: 'Cán bộ' };
       $('#lsList').innerHTML = ds.length ? '<ol class="card divide-y divide-line">' + ds.map(function (x) {
@@ -650,6 +656,7 @@
   function lamMoi() { route(); }
   function route() {
     var h = decodeURIComponent(location.hash.replace('#/', '')).split('/');
+    S.luot = (S.luot || 0) + 1;
     veNav();
     if (!$('#drawerWrap').hidden) dongNganKeo();
     window.scrollTo(0, 0);
