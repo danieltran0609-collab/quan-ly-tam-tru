@@ -846,7 +846,22 @@
     });
   }
 
+  // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
+  // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
+  var PB_GIAO_DIEN = '1.3.2';
+  function kiemTraBanMoi() {
+    if (API.cheDo !== 'may-chu') return;
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
+      if (!j.v || j.v === PB_GIAO_DIEN || !$('#drawerWrap').hidden || !$('#dlgWrap').hidden) return;
+      var k = 'tamtru-nang-' + j.v;
+      try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (e) { return; }
+      location.replace(location.pathname + '?v=' + encodeURIComponent(j.v) + location.hash);
+    }).catch(function () {});
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) kiemTraBanMoi(); });
+
   function khoiDong() {
+    kiemTraBanMoi();
     if (API.cheDo === 'xem-truoc') {
       var b = $('#previewBanner'); b.hidden = false;
       b.innerHTML = '<b>Bản xem trước</b> · chạy mã máy chủ thật trong trình duyệt với dữ liệu cơ sở thật từ Excel. Chưa kết nối Google Sheet: mọi thao tác chỉ lưu tạm, tải lại trang là mất.';
