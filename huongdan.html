@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hướng dẫn sử dụng</title>
+<meta name="description" content="Hướng dẫn sử dụng Hệ thống Quản lý Tạm trú dành cho cán bộ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #2B2D42; --muted: #6B7089; --line: #E9EAF2; --brand: #5463E6; --brand-50: #EEF0FE; --bg: #F6F7FB;
+    --mint: #DDF4EA; --mint-ink: #1F6B4A; --butter: #FFF1C9; --butter-ink: #8A5A00; --rose: #FDE0E0; --rose-ink: #A12B2B; --fog: #ECEEF2; --fog-ink: #555B66; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.7 "Be Vietnam Pro", system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 16px 64px; }
+  header { margin-bottom: 20px; }
+  h1 { font-size: 24px; margin: 0; }
+  h2 { font-size: 17px; margin: 0 0 8px; display: flex; gap: 10px; align-items: center; }
+  .so { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 10px; background: var(--brand-50); color: var(--brand); font-size: 14px; flex-shrink: 0; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 14px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  ol, ul { padding-left: 20px; margin: 6px 0; }
+  li { margin: 3px 0; }
+  a { color: var(--brand); }
+  .btn { display: inline-block; background: var(--brand); color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 12px; font-weight: 500; }
+  .tag { display: inline-block; padding: 1px 10px; border-radius: 99px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+  .note { background: var(--butter); color: var(--butter-ink); border-radius: 12px; padding: 10px 14px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Hướng dẫn sử dụng</h1>
+    <p class="muted">Hệ thống Quản lý Tạm trú tại Cơ sở Lưu trú · dành cho cán bộ</p>
+    <p><a class="btn" href="./">Mở hệ thống</a></p>
+  </header>
+
+  <section class="card">
+    <h2><span class="so">1</span>Đăng nhập lần đầu</h2>
+    <ol>
+      <li>Mở đường dẫn hệ thống, bấm <b>Đăng nhập bằng Google</b> và chọn Gmail của mình.</li>
+      <li>Lần đầu, hệ thống hiện form <b>Gửi yêu cầu truy cập</b>. Điền họ tên, <b>tên CSKV đúng như trong danh sách của phường</b> (ví dụ “Long”, “Cường C”), số điện thoại, rồi bấm Gửi.</li>
+      <li>Chờ Admin duyệt. Khi được báo đã duyệt, mở lại hệ thống hoặc bấm <b>Kiểm tra lại</b>.</li>
+    </ol>
+    <p class="muted">Mỗi cán bộ chỉ xem và nhập được các cơ sở thuộc địa bàn CSKV của mình. Nếu vào mà thấy 0 cơ sở, báo Admin kiểm tra tên CSKV.</p>
+  </section>
+
+  <section class="card">
+    <h2><span class="so">2</span>Đăng ký khách tạm trú</h2>
+    <ol>
+      <li>Bấm <b>Đăng ký khách</b> (trên điện thoại là nút nổi màu tím ở góc dưới bên phải).</li>
+      <li>Nhập <b>họ tên</b>, <b>số CCCD</b> (12 số) hoặc số hộ chiếu, ngày sinh, giới tính.</li>
+      <li>Ở ô <b>Cơ sở lưu trú</b>, gõ vài chữ của tên hoặc địa chỉ rồi chọn trong danh sách gợi ý.</li>
+      <li>Nhập số phòng, <b>ngày đến</b>, và <b>ngày đi dự kiến</b> (có nút +1, +3, +7, +30 ngày).</li>
+      <li>Có thể đính kèm ảnh CCCD/hộ chiếu (JPG, PNG hoặc PDF, tối đa 5 MB). Bấm <b>Đăng ký</b>.</li>
+    </ol>
+    <p class="note">Một số giấy tờ chỉ được tạm trú ở một nơi tại một thời điểm. Nếu hệ thống báo trùng, người đó phải được xác nhận rời đi ở nơi cũ trước.</p>
+  </section>
+
+  <section class="card">
+    <h2><span class="so">3</span>Trạng thái tự động</h2>
+    <table>
+      <tr><td><span class="tag" style="background:var(--mint);color:var(--mint-ink)">Đang ở</span></td><td>Còn hơn 3 ngày mới đến ngày đi dự kiến, hoặc chưa nhập ngày đi.</td></tr>
+      <tr><td><span class="tag" style="background:var(--butter);color:var(--butter-ink)">Sắp hết hạn</span></td><td>Còn 0–3 ngày đến ngày đi dự kiến.</td></tr>
+      <tr><td><span class="tag" style="background:var(--rose);color:var(--rose-ink)">Quá hạn</span></td><td>Đã qua ngày đi dự kiến mà chưa xác nhận rời đi → cần kiểm tra, gia hạn hoặc xác nhận rời đi.</td></tr>
+      <tr><td><span class="tag" style="background:var(--fog);color:var(--fog-ink)">Đã rời đi</span></td><td>Đã xác nhận rời đi. Hồ sơ vẫn được lưu.</td></tr>
+    </table>
+    <p class="muted">Trạng thái được tính lại mỗi khi mở hệ thống và tự cập nhật lúc 0 giờ hằng ngày. Trang <b>Tổng quan</b> có mục <b>Cần xử lý</b> liệt kê khách quá hạn và sắp hết hạn.</p>
+  </section>
+
+  <section class="card">
+    <h2><span class="so">4</span>Gia hạn, sửa thông tin, xác nhận rời đi</h2>
+    <ul>
+      <li><b>Gia hạn / sửa:</b> mở khách → <b>Sửa</b> → đổi ngày đi dự kiến hoặc thông tin khác → Lưu.</li>
+      <li><b>Rời đi:</b> bấm <b>Rời đi</b> ở dòng khách (hoặc trong hồ sơ), chọn ngày rời đi thực tế → Xác nhận.</li>
+      <li><b>Xoá</b> chỉ dành cho Admin, dùng khi nhập nhầm. Mọi thao tác thêm, sửa, xoá đều được ghi lịch sử.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2><span class="so">5</span>Cơ sở lưu trú</h2>
+    <ul>
+      <li>Trang <b>Cơ sở lưu trú</b> hiện các cơ sở trong địa bàn, lọc theo loại hình, tổ dân phố, tìm theo tên/địa chỉ/chủ cơ sở.</li>
+      <li>Bấm vào một cơ sở để xem thông tin và danh sách khách đang ở; có nút <b>Đăng ký khách</b> tại cơ sở đó.</li>
+      <li>Cơ sở mới do cán bộ thêm sẽ tự thuộc địa bàn của cán bộ đó. Cơ sở ngừng kinh doanh: sửa mục <b>Hoạt động</b> thành “Dừng hoạt động” (không xoá).</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2><span class="so">6</span>Lưu ý bảo mật</h2>
+    <ul>
+      <li>Không chia sẻ tài khoản; mỗi người dùng Gmail của chính mình.</li>
+      <li>Dùng xong trên máy dùng chung: bấm biểu tượng <b>đăng xuất</b> (cạnh tên ở góc dưới bên trái; trên điện thoại bấm vào vòng tròn chữ cái góc trên bên phải).</li>
+      <li>Phiên đăng nhập tự hết sau khoảng 1 giờ; khi đó chỉ cần đăng nhập lại.</li>
+      <li>Nếu vẫn thấy giao diện cũ sau khi hệ thống được cập nhật: tải lại trang (máy tính: Ctrl/Cmd + Shift + R).</li>
+    </ul>
+    <p class="muted"><a href="privacy.html">Chính sách quyền riêng tư</a> · Hỗ trợ: <a href="mailto:daniel.tran0609@gmail.com">daniel.tran0609@gmail.com</a></p>
+  </section>
+</main>
+</body>
+</html>
