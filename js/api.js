@@ -10,7 +10,7 @@
   function docToken() {
     try {
       var o = JSON.parse(sessionStorage.getItem(KHOA) || 'null');
-      if (o && o.exp * 1000 > Date.now() + 60000) return o;
+      if (o && ((o.phien && o.hetPhien > Date.now()) || o.exp * 1000 > Date.now() + 60000)) return o;
     } catch (e) {}
     return null;
   }
@@ -28,7 +28,14 @@
     coToken: function () { hienTai = docToken(); return !!hienTai; },
     emailToken: function () { return hienTai ? hienTai.email : ''; },
     tenToken: function () { return hienTai ? (hienTai.ten || '') : ''; },
-    hetHan: function () { return hienTai ? hienTai.exp * 1000 : 0; },
+    hetHan: function () { return hienTai ? (hienTai.phien ? hienTai.hetPhien : hienTai.exp * 1000) : 0; },
+    coPhien: function () { return !!(hienTai && hienTai.phien); },
+    /** Phiên làm việc do máy chủ cấp (thay cho Google ID token 1 giờ). */
+    datPhien: function (phien, hetPhien) {
+      if (!hienTai) return;
+      hienTai.phien = phien; hienTai.hetPhien = hetPhien;
+      try { sessionStorage.setItem(KHOA, JSON.stringify(hienTai)); } catch (e) {}
+    },
     khiThuLai: null,     // app.js gán: báo người dùng đang thử lại khi mạng chập chờn
     datToken: function (jwt) {
       var c = giaiMa(jwt);
@@ -64,7 +71,7 @@
       // Mỗi lần gọi có một mã yêu cầu; gửi lại (khi mạng lỗi) dùng lại mã này nên máy chủ không ghi trùng
       var ma = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'yc-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
       var goi = Object.assign({}, data || {}, { _yc: ma });
-      var body = JSON.stringify({ action: action, token: hienTai.t, data: goi });
+      var body = JSON.stringify({ action: action, token: hienTai.phien || hienTai.t, data: goi });
       var cho = function (lan) {
         return new Promise(function (ok) {
           var ms = [800, 2000, 4000][lan - 1] || 4000, t0 = Date.now();
