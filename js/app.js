@@ -171,7 +171,9 @@
     var v = $('#view');
     v.innerHTML = dauTrang('Tổng quan', 'Tình hình lưu trú hôm nay', duocGhi() ? '<button class="btn-primary" data-them-khach>' + ic('plus') + 'Đăng ký khách</button>' : '') + khungCho(4);
     var luot = S.luot;
-    goi('tongQuan').then(function (t) {
+    var tq = S.tqSan ? Promise.resolve(S.tqSan) : goi('tongQuan');
+    S.tqSan = null;   // chỉ dùng số liệu gửi kèm lúc mở app 1 lần
+    tq.then(function (t) {
       if (luot !== S.luot) return;   // đã chuyển sang trang khác
       var k = t.khach.theoTrangThai;
       var the = function (nhan, so, donVi, mau, icon, link) {
@@ -378,11 +380,12 @@
           (d.NgayDiDuKien && d.NgayDiDuKien < d.NgayDen) ? 'Ngày đi dự kiến trước ngày đến.' : '';
         if (loi) { var p = $('#fLoi'); p.textContent = loi; p.classList.remove('hidden'); return; }
         var nut = $('#fLuu'); nut.disabled = true; nut.textContent = 'Đang lưu…';
-        if (!moi) d.id = r.ID;
+        if (!moi) { d.id = r.ID; d._phienBan = r.NgayCapNhat; }
         var tep = Array.prototype.slice.call($('#tep').files);
         API.goi(moi ? 'themTamTru' : 'suaTamTru', d).then(function (kq) {
           return taiTep(kq.ID, tep).then(function () { return kq; });
         }).then(function (kq) {
+          S.coSo = null;
           toast(moi ? 'Đã đăng ký ' + kq.HoTen + ' (' + kq.ID + ')' : 'Đã lưu thay đổi');
           dongNganKeo(); lamMoi();
         }).catch(function (err) {
@@ -413,14 +416,14 @@
     hoi('Xác nhận rời đi', (r ? r.HoTen + ' – ' : '') + 'chọn ngày rời đi thực tế:', 'Xác nhận', false,
       '<input type="date" class="inp" value="' + homNay() + '" max="' + homNay() + '"' + (r ? ' min="' + esc(r.NgayDen) + '"' : '') + '>').then(function (kq) {
       if (!kq) return;
-      goi('xacNhanDi', { id: id, ngay: kq.v }).then(function (x) { toast(x.HoTen + ' đã rời đi ngày ' + vn(x.NgayDiThucTe)); dongNganKeo(); lamMoi(); });
+      goi('xacNhanDi', { id: id, ngay: kq.v }).then(function (x) { S.coSo = null; toast(x.HoTen + ' đã rời đi ngày ' + vn(x.NgayDiThucTe)); dongNganKeo(); lamMoi(); });
     });
   }
 
   function xoaKhach(id) {
     hoi('Xoá bản ghi ' + id + '?', 'Chỉ dùng khi nhập nhầm. Bản ghi sẽ bị xoá khỏi danh sách (nội dung vẫn lưu trong Lịch sử).', 'Xoá', true).then(function (ok) {
       if (!ok) return;
-      goi('xoaTamTru', { id: id }).then(function () { toast('Đã xoá ' + id); dongNganKeo(); lamMoi(); });
+      goi('xoaTamTru', { id: id }).then(function () { S.coSo = null; toast('Đã xoá ' + id); dongNganKeo(); lamMoi(); });
     });
   }
 
@@ -534,7 +537,7 @@
       d.KiemTra092026 = f.KiemTra092026.checked;
       var loi = !d.TenCoSo ? 'Chưa nhập tên cơ sở.' : !d.LoaiHinh ? 'Chưa chọn loại hình.' : !d.DiaChi ? 'Chưa nhập địa chỉ.' : '';
       if (loi) { $('#fLoi').textContent = loi; $('#fLoi').classList.remove('hidden'); return; }
-      if (!moi) d.ma = c.MaCoSo;
+      if (!moi) { d.ma = c.MaCoSo; d._phienBan = c.NgayCapNhat; }
       var nut = $('#fLuu'); nut.disabled = true;
       API.goi(moi ? 'themCoSo' : 'suaCoSo', d).then(function (kq) {
         toast(moi ? 'Đã thêm ' + kq.MaCoSo : 'Đã lưu ' + kq.MaCoSo); S.coSo = null; dongNganKeo(); lamMoi();
@@ -633,7 +636,7 @@
       e.preventDefault();
       var d = {};
       ['HoTen', 'Email', 'CSKV', 'PhuongXa', 'Quyen', 'TrangThai', 'GhiChu'].forEach(function (k) { d[k] = f[k].value.trim(); });
-      if (!moi) d.ma = x.MaCanBo;
+      if (!moi) { d.ma = x.MaCanBo; d._phienBan = x.NgayCapNhat; }
       API.goi(moi ? 'themCanBo' : 'suaCanBo', d).then(function () { toast('Đã lưu'); dongNganKeo(); lamMoi(); })
         .catch(function (err) { $('#fLoi').textContent = err.message; $('#fLoi').classList.remove('hidden'); });
     });
@@ -642,10 +645,27 @@
   // ================= LỊCH SỬ =================
   function trangLichSu() {
     var v = $('#view');
-    v.innerHTML = dauTrang('Lịch sử thao tác', '200 thao tác gần nhất') + '<div id="lsList">' + khungCho(4) + '</div>';
+    v.innerHTML = dauTrang('Lịch sử thao tác', '200 thao tác gần nhất · sao lưu dữ liệu') +
+      '<section class="card p-4 sm:p-5 mb-5"><div class="flex flex-wrap items-center gap-3"><div class="min-w-0 flex-1"><h2 class="font-semibold">Sao lưu</h2><p class="text-[13px] text-muted">Tự động lúc 1 giờ sáng mỗi ngày, giữ 30 bản gần nhất trong thư mục Drive “TamTru – Sao lưu”.</p></div>' +
+      '<button id="btnSaoLuu" class="btn-soft btn-sm">' + ic('check') + 'Sao lưu ngay</button></div><div id="slList" class="mt-3 text-sm text-muted">Đang tải danh sách…</div></section>' +
+      '<div id="lsList">' + khungCho(4) + '</div>';
+    var veSaoLuu = function () {
+      goi('dsSaoLuu').then(function (ds) {
+        if (!$('#slList')) return;
+        $('#slList').innerHTML = ds.length ? '<ul class="divide-y divide-line">' + ds.slice(0, 5).map(function (x) {
+          return '<li class="py-2 flex gap-3"><span class="flex-1 min-w-0 truncate text-ink">' + esc(x.ten) + '</span><a class="text-brand-600 shrink-0" href="' + esc(x.url) + '" target="_blank" rel="noopener">Mở</a></li>';
+        }).join('') + '</ul>' + (ds.length > 5 ? '<p class="text-xs mt-1">… và ' + (ds.length - 5) + ' bản cũ hơn</p>' : '') : 'Chưa có bản sao lưu nào.';
+      }).catch(function () { if ($('#slList')) $('#slList').textContent = 'Không tải được danh sách sao lưu.'; });
+    };
+    veSaoLuu();
+    $('#btnSaoLuu').addEventListener('click', function (e) {
+      var b = e.currentTarget; b.disabled = true; b.textContent = 'Đang sao lưu…';
+      goi('saoLuu').then(function (r) { toast('Đã sao lưu: ' + r.ten); veSaoLuu(); })
+        .catch(function () {}).then(function () { if (document.body.contains(b)) { b.disabled = false; b.innerHTML = ic('check') + 'Sao lưu ngay'; } });
+    });
     goi('dsLichSu', { gioiHan: 200 }).then(function (ds) {
       if (!$('#lsList')) return;
-      var mau = { 'Thêm': 'bg-mint text-mint-ink', 'Sửa': 'bg-sky text-sky-ink', 'Xoá': 'bg-rose text-rose-ink', 'Tải tệp': 'bg-lilac text-lilac-ink' };
+      var mau = { 'Thêm': 'bg-mint text-mint-ink', 'Sửa': 'bg-sky text-sky-ink', 'Xoá': 'bg-rose text-rose-ink', 'Tải tệp': 'bg-lilac text-lilac-ink', 'Duyệt': 'bg-mint text-mint-ink', 'Sao lưu': 'bg-fog text-fog-ink' };
       var tenBang = { DanhSachTamTru: 'Khách', CoSoLuuTru: 'Cơ sở', CanBoQuanLy: 'Cán bộ' };
       $('#lsList').innerHTML = ds.length ? '<ol class="card divide-y divide-line">' + ds.map(function (x) {
         var nd = x.HanhDong === 'Xoá' ? 'Nội dung bản ghi đã lưu' : x.NoiDung;
@@ -784,8 +804,8 @@
   var daGanRoute = false;
   function vaoHeThong() {
     $('#view').innerHTML = '<div class="py-16 text-center text-sm text-muted">Đang tải dữ liệu…</div>';
-    API.goi('batDau').then(function (kq) {
-      S.user = kq.toi; S.dm = kq.danhMuc; S.soChoDuyet = kq.soChoDuyet || 0; S.phamVi = kq.phamVi || { toanPhuong: true };
+    API.goi('batDau', { kemTongQuan: !location.hash || /tong-quan/.test(location.hash) }).then(function (kq) {
+      S.user = kq.toi; S.dm = kq.danhMuc; S.soChoDuyet = kq.soChoDuyet || 0; S.phamVi = kq.phamVi || { toanPhuong: true }; S.tqSan = kq.tongQuan || null;
       $('#loginWrap').hidden = true;
       veUser();
       if (!daGanRoute) { window.addEventListener('hashchange', route); daGanRoute = true; }
