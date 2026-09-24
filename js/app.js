@@ -81,13 +81,14 @@
     var cur = (location.hash.replace('#/', '') || 'tong-quan').split('/')[0];
     var ds = TRANG.filter(function (t) { return !t.admin || laAdmin(); });
     $('#navSide').innerHTML = ds.map(function (t) {
-      return '<a class="nav-a" href="#/' + t.id + '"' + (t.id === cur ? ' aria-current="page"' : '') + '>' + ic(t.ic, 'size-[18px]') + t.ten + '</a>';
+      var soDuyet = t.id === 'can-bo' && S.soChoDuyet ? '<span class="ml-auto badge bg-rose text-rose-ink">' + S.soChoDuyet + '</span>' : '';
+      return '<a class="nav-a" href="#/' + t.id + '"' + (t.id === cur ? ' aria-current="page"' : '') + '>' + ic(t.ic, 'size-[18px]') + t.ten + soDuyet + '</a>';
     }).join('');
     $('#navBottom').style.gridTemplateColumns = 'repeat(' + ds.length + ', minmax(0, 1fr))';
     $('#navBottom').innerHTML = ds.map(function (t) {
       var on = t.id === cur;
       return '<a href="#/' + t.id + '" class="flex flex-col items-center justify-center gap-0.5 h-16 text-[11px] font-medium ' + (on ? 'text-brand-600' : 'text-muted') + '">' +
-        '<span class="grid place-items-center h-7 w-12 rounded-full ' + (on ? 'bg-brand-50' : '') + '">' + ic(t.ic, 'size-5') + '</span>' + (t.ngan || t.ten) + '</a>';
+        '<span class="relative grid place-items-center h-7 w-12 rounded-full ' + (on ? 'bg-brand-50' : '') + '">' + ic(t.ic, 'size-5') + (t.id === 'can-bo' && S.soChoDuyet ? '<span class="absolute -top-1 right-1 grid place-items-center min-w-4 h-4 px-1 rounded-full bg-rose-ink text-white text-[10px]">' + S.soChoDuyet + '</span>' : '') + '</span>' + (t.ngan || t.ten) + '</a>';
     }).join('');
     var t = TRANG.filter(function (x) { return x.id === cur; })[0];
     $('#mTitle').textContent = t ? t.ten : 'Quản lý Tạm trú';
@@ -543,14 +544,65 @@
       dsCB = ds;
       var chua = ds.filter(function (x) { return x.TrangThai === 'Chưa kích hoạt'; }).length;
       var mauQ = { Admin: 'bg-lilac text-lilac-ink', CanBo: 'bg-sky text-sky-ink', Xem: 'bg-fog text-fog-ink' };
-      var mauT = { 'Hoạt động': 'bg-mint text-mint-ink', 'Chưa kích hoạt': 'bg-butter text-butter-ink', 'Khoá': 'bg-rose text-rose-ink' };
-      $('#cbList').innerHTML = (chua ? '<div class="flex gap-2 items-start rounded-2xl bg-butter text-butter-ink px-4 py-3 text-sm mb-4">' + ic('alert', 'size-4 mt-0.5 shrink-0') + '<span>' + chua + ' cán bộ chưa có email nên chưa đăng nhập được. Họ tên và email cần được bổ sung.</span></div>' : '') +
+      var mauT = { 'Hoạt động': 'bg-mint text-mint-ink', 'Chưa kích hoạt': 'bg-butter text-butter-ink', 'Chờ duyệt': 'bg-sky text-sky-ink', 'Từ chối': 'bg-rose text-rose-ink', 'Khoá': 'bg-rose text-rose-ink' };
+      var choDuyet = ds.filter(function (x) { return x.TrangThai === 'Chờ duyệt'; });
+      S.soChoDuyet = laAdmin() ? choDuyet.length : 0; veNav();
+      ds = ds.filter(function (x) { return x.TrangThai !== 'Chờ duyệt'; });
+      $('#cbList').innerHTML = (laAdmin() && choDuyet.length ? '<section class="mb-5"><h2 class="font-semibold mb-3">Yêu cầu truy cập chờ duyệt <span class="text-muted font-normal">(' + choDuyet.length + ')</span></h2><div class="grid md:grid-cols-2 gap-3">' +
+        choDuyet.map(function (x) {
+          return '<article class="card p-4 border-sky"><div class="flex items-start gap-3"><span class="grid place-items-center size-10 rounded-full bg-sky text-sky-ink shrink-0">' + ic('user', 'size-5') + '</span>' +
+            '<div class="min-w-0 flex-1"><b class="block truncate">' + esc(x.HoTen) + '</b><span class="block text-xs text-muted truncate">' + esc(x.Email) + '</span>' +
+            '<span class="block text-xs text-muted mt-1">' + (x.CSKV ? 'Khai CSKV: <b class="text-ink">' + esc(x.CSKV) + '</b> · ' : '') + 'gửi ' + vnTG(x.NgayTao) + '</span>' +
+            (x.GhiChu ? '<span class="block text-xs text-muted mt-1 break-words">' + esc(x.GhiChu) + '</span>' : '') + '</div></div>' +
+            '<div class="flex gap-2 mt-3 pt-3 border-t border-line"><button class="btn-danger btn-sm" data-tuchoi-cb="' + esc(x.MaCanBo) + '">Từ chối</button><span class="flex-1"></span><button class="btn-primary btn-sm" data-duyet-cb="' + esc(x.MaCanBo) + '">' + ic('check') + 'Xem & duyệt</button></div></article>';
+        }).join('') + '</div></section>' : '') +
+        (chua ? '<div class="flex gap-2 items-start rounded-2xl bg-butter text-butter-ink px-4 py-3 text-sm mb-4">' + ic('alert', 'size-4 mt-0.5 shrink-0') + '<span>' + chua + ' cán bộ chưa có email nên chưa đăng nhập được. Họ tên và email cần được bổ sung.</span></div>' : '') +
         '<div class="card overflow-hidden"><div class="overflow-x-auto scroll-thin"><table class="w-full min-w-[640px]"><thead><tr><th class="th">Mã</th><th class="th">Họ tên / CSKV</th><th class="th">Email</th><th class="th">Quyền</th><th class="th">Trạng thái</th>' + (laAdmin() ? '<th class="th"></th>' : '') + '</tr></thead><tbody>' +
         ds.map(function (x) {
           return '<tr class="hover:bg-canvas/60"><td class="td text-muted">' + esc(x.MaCanBo) + '</td><td class="td"><b class="font-medium block">' + esc(x.HoTen || (x.CSKV ? 'CSKV ' + x.CSKV : '')) + '</b><span class="text-xs text-muted">' + (x.HoTen ? (x.CSKV ? 'CSKV ' + esc(x.CSKV) : '') : 'chưa có họ tên') + (x.PhuongXa ? ' · ' + esc(x.PhuongXa) : '') + '</span></td>' +
             '<td class="td">' + (esc(x.Email) || '<span class="text-muted">—</span>') + '</td><td class="td"><span class="badge ' + (mauQ[x.Quyen] || '') + '">' + esc(x.Quyen) + '</span></td><td class="td"><span class="badge ' + (mauT[x.TrangThai] || 'bg-fog text-fog-ink') + '">' + esc(x.TrangThai) + '</span></td>' +
             (laAdmin() ? '<td class="td text-right"><button class="btn-ghost btn-sm" data-sua-cb="' + esc(x.MaCanBo) + '">' + ic('edit') + '</button></td>' : '') + '</tr>';
         }).join('') + '</tbody></table></div></div>';
+      dsCB = ds.concat(choDuyet);
+    });
+  }
+
+  function formDuyet(x) {
+    var trongCho = dsCB.filter(function (c) { return c.TrangThai === 'Chưa kích hoạt' && !c.Email; });
+    var khop = trongCho.filter(function (c) { return x.CSKV && boDau(c.CSKV) === boDau(x.CSKV); })[0];
+    moNganKeo(dauNganKeo('Duyệt yêu cầu truy cập', esc(x.MaCanBo) + ' · gửi ' + vnTG(x.NgayTao)) +
+      '<form id="fDuyet" class="flex-1 overflow-y-auto px-5 sm:px-6 py-5 flex flex-col gap-4" novalidate>' +
+      '<dl class="card px-4 text-sm">' +
+      [['Họ tên', esc(x.HoTen)], ['Email Google', '<b class="font-medium">' + esc(x.Email) + '</b>'], ['CSKV tự khai', esc(x.CSKV) || '—'], ['Ghi chú', esc(x.GhiChu) || '—']].map(function (d) {
+        return '<div class="flex gap-4 py-2.5 border-b border-line last:border-0"><dt class="w-28 shrink-0 text-muted text-[13px]">' + d[0] + '</dt><dd class="min-w-0 break-words">' + d[1] + '</dd></div>';
+      }).join('') + '</dl>' +
+      '<div><span class="lbl">Cấp quyền *</span><div class="grid grid-cols-3 gap-2">' + [['Xem', 'Chỉ xem'], ['CanBo', 'Cán bộ'], ['Admin', 'Quản trị']].map(function (q) {
+        return '<label><input type="radio" name="Quyen" value="' + q[0] + '" class="peer sr-only"' + (q[0] === 'CanBo' ? ' checked' : '') + '><span class="flex h-10 items-center justify-center rounded-xl border border-line text-sm cursor-pointer peer-checked:bg-brand-50 peer-checked:border-brand peer-checked:text-brand-600">' + q[1] + '</span></label>';
+      }).join('') + '</div><p class="text-xs text-muted mt-1.5">Cán bộ: đăng ký, sửa khách và cơ sở · Chỉ xem: không sửa được · Quản trị: toàn quyền, duyệt người khác.</p>' +
+      '<label id="xnAdmin" class="hidden mt-2 flex gap-2 items-start text-sm bg-rose text-rose-ink rounded-xl px-3 py-2"><input type="checkbox" name="xacNhanAdmin" class="mt-0.5"> Tôi xác nhận cấp toàn quyền quản trị cho tài khoản này.</label></div>' +
+      '<div><label class="lbl" for="gopVao">Gắn vào dòng CSKV có sẵn</label><select id="gopVao" name="gopVao" class="inp"><option value="">— Không gắn, tạo cán bộ mới —</option>' +
+      trongCho.map(function (c) { return '<option value="' + esc(c.MaCanBo) + '"' + (khop && khop.MaCanBo === c.MaCanBo ? ' selected' : '') + '>' + esc(c.MaCanBo + ' · CSKV ' + (c.CSKV || '?')) + '</option>'; }).join('') +
+      '</select><p class="text-xs text-muted mt-1.5">' + (khop ? 'Đã tự chọn dòng có tên CSKV trùng với tên người gửi khai. Kiểm tra lại cho đúng người.' : 'Chọn nếu người này là một CSKV đã có sẵn trong danh sách (chưa có email).') + '</p></div>' +
+      '<p id="fLoi" class="hidden text-sm bg-rose text-rose-ink rounded-xl px-3 py-2"></p></form>' +
+      '<footer class="flex gap-2 px-5 sm:px-6 py-4 border-t border-line"><button class="btn-danger" data-tuchoi-cb="' + esc(x.MaCanBo) + '">Từ chối</button><span class="flex-1"></span><button id="fLuu" form="fDuyet" class="btn-primary min-w-28">' + ic('check') + 'Duyệt</button></footer>');
+    var f = $('#fDuyet');
+    $$('[name=Quyen]', f).forEach(function (r) { r.addEventListener('change', function () { $('#xnAdmin').classList.toggle('hidden', f.Quyen.value !== 'Admin'); }); });
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var d = { ma: x.MaCanBo, Quyen: f.Quyen.value, gopVao: f.gopVao.value, xacNhanAdmin: f.xacNhanAdmin.checked };
+      if (d.Quyen === 'Admin' && !d.xacNhanAdmin) { $('#fLoi').textContent = 'Cần tích xác nhận khi cấp quyền Quản trị.'; $('#fLoi').classList.remove('hidden'); return; }
+      var nut = $('#fLuu'); nut.disabled = true;
+      API.goi('duyetCanBo', d).then(function (r) { toast('Đã duyệt ' + x.Email + ' → ' + r.MaCanBo); dongNganKeo(); lamMoi(); })
+        .catch(function (err) { $('#fLoi').textContent = err.message; $('#fLoi').classList.remove('hidden'); nut.disabled = false; });
+    });
+  }
+
+  function tuChoi(ma) {
+    var x = dsCB.filter(function (c) { return c.MaCanBo === ma; })[0];
+    hoi('Từ chối yêu cầu của ' + (x ? x.Email : ma) + '?', 'Người này sẽ không đăng nhập được và không gửi lại yêu cầu được. Lý do (không bắt buộc):', 'Từ chối', true,
+      '<input class="inp" maxlength="200" placeholder="VD: không xác định được danh tính">').then(function (kq) {
+      if (!kq) return;
+      goi('tuChoiCanBo', { ma: ma, lyDo: kq.v }).then(function () { toast('Đã từ chối'); dongNganKeo(); lamMoi(); });
     });
   }
 
@@ -609,7 +661,7 @@
   }
 
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-them-khach],[data-xem-khach],[data-sua-khach],[data-di],[data-xoa-khach],[data-tt],[data-loai],[data-them-coso],[data-xem-coso],[data-sua-coso],[data-xoa-coso],[data-loc-loai],[data-loc-cskv],[data-them-cb],[data-sua-cb],[data-xoa-cb]');
+    var t = e.target.closest('[data-them-khach],[data-xem-khach],[data-sua-khach],[data-di],[data-xoa-khach],[data-tt],[data-loai],[data-them-coso],[data-xem-coso],[data-sua-coso],[data-xoa-coso],[data-loc-loai],[data-loc-cskv],[data-them-cb],[data-sua-cb],[data-xoa-cb],[data-duyet-cb],[data-tuchoi-cb]');
     if (!t) return;
     var d = t.dataset;
     if ('tt' in d) { S.loc.trangThai = d.tt; return veDsKhach(); }
@@ -627,6 +679,8 @@
     if ('xemCoso' in d) return xemCoSo(d.xemCoso);
     if ('locLoai' in d) { S.locCS = { q: '', loaiHinh: d.locLoai, cskv: '', tdp: '' }; location.hash = '#/co-so'; return; }
     if ('locCskv' in d) { S.locCS = { q: '', loaiHinh: '', cskv: d.locCskv, tdp: '' }; location.hash = '#/co-so'; return; }
+    if ('duyetCb' in d) return formDuyet(dsCB.filter(function (x) { return x.MaCanBo === d.duyetCb; })[0]);
+    if ('tuchoiCb' in d) return tuChoi(d.tuchoiCb);
     if ('themCb' in d) return formCanBo(null);
     if ('suaCb' in d) return formCanBo(dsCB.filter(function (x) { return x.MaCanBo === d.suaCb; })[0]);
     if ('xoaCb' in d) return hoi('Xoá cán bộ ' + d.xoaCb + '?', 'Tài khoản này sẽ không đăng nhập được nữa.', 'Xoá', true)
@@ -677,20 +731,63 @@
   }
   document.addEventListener('click', function (e) { if (e.target.closest('[data-dang-xuat]')) { e.preventDefault(); dangXuat(); } });
 
+  // Người đăng nhập Google nhưng chưa có trong CanBoQuanLy: gửi yêu cầu để Admin duyệt
+  function manXinQuyen() {
+    $('#loginWrap').hidden = false;
+    $('#gBtn').innerHTML = '';
+    $('#view').innerHTML = '';
+    var em = API.emailToken();
+    $('#loginMsg').innerHTML = '<form id="fXin" class="text-left flex flex-col gap-3" novalidate>' +
+      '<p class="text-sm rounded-xl px-3 py-2 bg-sky text-sky-ink">Tài khoản ' + (em ? '<b>' + esc(em) + '</b> ' : '') + 'chưa có quyền. Gửi yêu cầu để Admin phê duyệt.</p>' +
+      '<div><label class="lbl" for="xHoTen">Họ và tên *</label><input id="xHoTen" class="inp" maxlength="100" value="' + esc(API.tenToken()) + '"></div>' +
+      '<div class="grid grid-cols-2 gap-2"><div><label class="lbl" for="xCSKV">CSKV / đơn vị</label><input id="xCSKV" class="inp" maxlength="50" placeholder="VD: Long"></div>' +
+      '<div><label class="lbl" for="xSDT">Số điện thoại</label><input id="xSDT" class="inp" inputmode="tel" maxlength="20"></div></div>' +
+      '<div><label class="lbl" for="xLyDo">Ghi chú cho Admin</label><textarea id="xLyDo" rows="2" maxlength="300" class="inp h-auto py-2" placeholder="Chức vụ, địa bàn phụ trách…"></textarea></div>' +
+      '<p id="xLoi" class="hidden text-sm bg-rose text-rose-ink rounded-xl px-3 py-2"></p>' +
+      '<div class="flex gap-2 mt-1"><button type="button" data-dang-xuat class="btn-ghost">Tài khoản khác</button><span class="flex-1"></span><button id="xGui" class="btn-primary">Gửi yêu cầu</button></div></form>';
+    $('#fXin').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var d = { HoTen: $('#xHoTen').value.trim(), CSKV: $('#xCSKV').value.trim(), SoDienThoai: $('#xSDT').value.trim(), LyDo: $('#xLyDo').value.trim() };
+      if (!d.HoTen) { $('#xLoi').textContent = 'Chưa nhập họ tên.'; $('#xLoi').classList.remove('hidden'); return; }
+      $('#xGui').disabled = true; $('#xGui').textContent = 'Đang gửi…';
+      API.goi('xinQuyen', d).then(function (r) { manChoDuyet('Đã gửi yêu cầu cho tài khoản ' + r.email + '.'); })
+        .catch(function (err) {
+          if (err.code === 'CHO_DUYET') return manChoDuyet(err.message);
+          $('#xLoi').textContent = err.message; $('#xLoi').classList.remove('hidden');
+          $('#xGui').disabled = false; $('#xGui').textContent = 'Gửi yêu cầu';
+        });
+    });
+  }
+
+  function manChoDuyet(thongBao) {
+    $('#loginWrap').hidden = false;
+    $('#gBtn').innerHTML = '';
+    $('#view').innerHTML = '';
+    $('#loginMsg').innerHTML = '<div class="flex flex-col items-center gap-3">' +
+      '<span class="grid place-items-center size-12 rounded-2xl bg-butter text-butter-ink">' + ic('clock', 'size-6') + '</span>' +
+      '<p class="font-medium">Đang chờ Admin phê duyệt</p>' +
+      '<p class="text-sm text-muted">' + esc(thongBao || ('Yêu cầu của ' + API.emailToken() + ' đã được gửi.')) + ' Khi được duyệt, bấm "Kiểm tra lại" để vào hệ thống.</p>' +
+      '<div class="flex gap-2 mt-2"><button type="button" data-dang-xuat class="btn-ghost">Tài khoản khác</button><button type="button" id="xKiemTra" class="btn-primary">Kiểm tra lại</button></div></div>';
+    $('#xKiemTra').addEventListener('click', function () { vaoHeThong(); });
+  }
+
   var daGanRoute = false;
   function vaoHeThong() {
     $('#view').innerHTML = '<div class="py-16 text-center text-sm text-muted">Đang tải dữ liệu…</div>';
     API.goi('batDau').then(function (kq) {
-      S.user = kq.toi; S.dm = kq.danhMuc;
+      S.user = kq.toi; S.dm = kq.danhMuc; S.soChoDuyet = kq.soChoDuyet || 0;
+      $('#loginWrap').hidden = true;
       veUser();
       if (!daGanRoute) { window.addEventListener('hashchange', route); daGanRoute = true; }
       route();
     }).catch(function (e) {
+      if (e.code === 'CHUA_CAP_QUYEN') return manXinQuyen();
+      if (e.code === 'CHO_DUYET') return manChoDuyet(e.message);
       if (API.cheDo !== 'may-chu') { $('#view').innerHTML = trong('Không vào được hệ thống', esc(e.message)); return; }
-      if (e.code === 'CHUA_CAP_QUYEN' || e.code === 'KHOA') {
+      if (e.code === 'TU_CHOI' || e.code === 'KHOA') {
         API.xoaToken();
         if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
-        return manDangNhap(esc(e.message) + ' Hãy đăng nhập bằng tài khoản khác.', 'loi');
+        return manDangNhap(esc(e.message) + ' Có thể đăng nhập bằng tài khoản khác.', 'loi');
       }
       if (e.code === 'TOKEN' || e.code === 'CHUA_DANG_NHAP') return;   // khiHetPhien đã mở màn đăng nhập
       $('#view').innerHTML = trong('Không vào được hệ thống', esc(e.message) + '<br><button class="btn-soft mt-4" onclick="location.reload()">Thử lại</button>');
