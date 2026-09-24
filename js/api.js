@@ -27,9 +27,10 @@
     khiHetPhien: null,   // app.js gán: gọi khi máy chủ báo token hỏng/hết hạn
     coToken: function () { hienTai = docToken(); return !!hienTai; },
     emailToken: function () { return hienTai ? hienTai.email : ''; },
+    tenToken: function () { return hienTai ? (hienTai.ten || '') : ''; },
     datToken: function (jwt) {
       var c = giaiMa(jwt);
-      hienTai = { t: jwt, exp: c.exp || 0, email: c.email || '' };
+      hienTai = { t: jwt, exp: c.exp || 0, email: c.email || '', ten: c.name || '' };
       try { sessionStorage.setItem(KHOA, JSON.stringify(hienTai)); } catch (e) {}
     },
     xoaToken: function () { hienTai = null; try { sessionStorage.removeItem(KHOA); } catch (e) {} },
