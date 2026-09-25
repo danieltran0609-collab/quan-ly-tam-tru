@@ -68,6 +68,11 @@
   body.dang-chon .fab-wrap { display: none; }
   /* Bảng trượt từ dưới lên */
   .bang-truot { animation: truot .22s ease-out; }
+  /* Nhập theo danh sách: ngăn kéo rộng + bảng nhiều cột trên máy tính, thẻ gọn trên điện thoại */
+  @media (min-width: 640px) {
+    .drawer-rong { width: min(1100px, 100vw); }
+    .ds-dong, .ds-cot { grid-template-columns: 1.75rem minmax(9rem,1.5fr) 9.5rem 9.5rem 5.5rem 6.5rem 4.5rem minmax(8rem,1.4fr) 2.5rem; }
+  }
   @keyframes truot { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
   #dauMobi.an-di { transform: translateY(-100%); }
   /* Vùng chạm tối thiểu 44×44px trên điện thoại */
@@ -165,8 +170,8 @@
 
 <div id="toasts" class="fixed z-[60] bottom-20 lg:bottom-6 right-4 left-4 sm:left-auto flex flex-col gap-2 items-end pointer-events-none"></div>
 
-<script src="js/config.js?v=2.4.0"></script>
-<script src="js/api.js?v=2.4.0"></script>
-<script src="js/app.js?v=2.4.0"></script>
+<script src="js/config.js?v=2.5.0"></script>
+<script src="js/api.js?v=2.5.0"></script>
+<script src="js/app.js?v=2.5.0"></script>
 </body>
 </html>
