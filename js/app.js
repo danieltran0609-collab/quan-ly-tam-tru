@@ -504,13 +504,21 @@
           }).join('') + (t.canBoChuaKiemTra.length > 20 ? '<li class="border-t border-line"><a href="#/can-bo" class="block px-4 sm:px-5 py-2.5 text-xs text-brand-600">Xem thêm ' + soVN(t.canBoChuaKiemTra.length - 20) + ' cán bộ</a></li>' : '') + '</ul>'
             : '<div class="flex items-center gap-3 px-4 sm:px-5 pb-4"><span class="grid place-items-center size-9 shrink-0 rounded-xl bg-mint text-mint-ink">' + ic('check', 'size-5') + '</span><p class="text-sm text-muted">Mọi cán bộ đều đã kiểm tra hết cơ sở phụ trách trong tháng.</p></div>') + '</section>' : '') +
         // Theo CSKV (chỉ Admin – người khác chỉ có 1 địa bàn)
-        (!pv.toanPhuong ? '' : '<section class="card mt-3 lg:mt-6 overflow-hidden">' + dauMuc('Theo cảnh sát khu vực', 'Số cơ sở phụ trách và khách đang lưu trú') +
-        '<ul>' + cskv.map(function (c) {
+        (!pv.toanPhuong ? '' : '<section class="card mt-3 lg:mt-6 overflow-hidden">' + dauMuc('Theo cảnh sát khu vực', soVN(cskv.length) + ' CSKV · số cơ sở phụ trách và khách đang lưu trú') +
+        (cskv.length > 8 ? '<div class="px-4 sm:px-5 pb-3"><label class="relative block"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted">' + ic('search', 'size-4') + '</span>' +
+          '<input id="cskvQ" type="search" class="inp h-10 pl-9 text-sm" placeholder="Tìm CSKV…" autocomplete="off"></label></div>' : '') +
+        '<div id="cskvLuoi" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 px-4 sm:px-5 pb-4">' + cskv.map(function (c) {
           var x = t.coSo.theoCSKV[c];
-          return '<li><button type="button" data-loc-cskv="' + esc(c) + '" class="w-full flex items-center gap-3 px-4 sm:px-5 py-2.5 min-h-12 border-t border-line text-left hover:bg-canvas/60"><b class="flex-1 min-w-0 truncate text-sm font-medium">' + esc(c) + '</b>' +
-            '<span class="text-xs text-muted tabular-nums"><b class="text-ink font-semibold">' + soVN(x.coSo) + '</b> cơ sở</span><span class="w-20 text-right text-xs text-muted tabular-nums"><b class="text-ink font-semibold">' + soVN(x.khachDangO) + '</b> khách</span>' + ic('chev', 'size-4 text-muted') + '</button></li>';
-        }).join('') + '</ul></section>');
+          return '<button type="button" data-loc-cskv="' + esc(c) + '" data-ten="' + esc(boDau(c)) + '" class="flex items-center gap-2 px-3 py-2.5 min-h-12 rounded-xl border border-line text-left hover:bg-canvas/60 hover:border-[#D6DAF5]"><b class="flex-1 min-w-0 truncate text-sm font-medium">' + esc(c) + '</b>' +
+            '<span class="shrink-0 text-xs text-muted tabular-nums"><b class="text-ink font-semibold">' + soVN(x.coSo) + '</b> CS</span><span class="shrink-0 text-xs text-muted tabular-nums"><b class="text-ink font-semibold">' + soVN(x.khachDangO) + '</b> khách</span>' + ic('chev', 'size-4 text-muted shrink-0') + '</button>';
+        }).join('') + '</div>' +
+        '<p id="cskvRong" class="hidden px-4 sm:px-5 pb-4 text-sm text-muted">Không có CSKV nào khớp tìm kiếm.</p></section>');
       v.innerHTML = html;
+      if ($('#cskvQ')) $('#cskvQ').addEventListener('input', debounce(function (e) {
+        var q = boDau(e.target.value).trim(), hien = 0;
+        $$('#cskvLuoi [data-ten]').forEach(function (b) { var an = q && b.dataset.ten.indexOf(q) < 0; b.hidden = an; if (!an) hien++; });
+        $('#cskvRong').classList.toggle('hidden', hien > 0);
+      }, 120));
     }).catch(function () { if (luot === S.luot) v.innerHTML = dauTrang('Tổng quan') + trong('Không tải được dữ liệu', 'Kiểm tra kết nối rồi tải lại trang.'); });
   }
 
@@ -2143,6 +2151,15 @@
     if (dong0.length) sh['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 2, c: 0 }, e: { r: dong0.length + 2, c: n - 1 } }) };
     return sh;
   }
+  /** Khoá nút xuất Excel trong lúc xử lý (tải thư viện + gom dữ liệu có thể mất vài giây, nhất là mạng yếu hoặc lần xuất đầu tiên);
+   *  khôi phục khi xong dù thành công hay lỗi, tránh bấm nhiều lần thành nhiều lượt tải trùng. */
+  function xuatVoiTrangThai(nut, thucHien) {
+    if (!nut || nut.disabled) return;
+    var chu = nut.innerHTML;
+    nut.disabled = true; nut.innerHTML = ic('down', 'size-5 sm:size-4 animate-pulse') + '<span class="hidden sm:inline">Đang xuất…</span>';
+    var khoiPhuc = function () { if (document.body.contains(nut)) { nut.disabled = false; nut.innerHTML = chu; } };
+    Promise.resolve(thucHien()).then(khoiPhuc, khoiPhuc);
+  }
   function xuatExcel(tenFile, bang, thongTin, nhatKy) {
     return napThuVien('XLSX').then(function (X) {
       var wb = X.utils.book_new(), luc = new Date().toLocaleString('vi-VN');
@@ -2183,7 +2200,7 @@
     if (!ds.length) return toast('Không có dòng nào để xuất.', 'canh');
     var boLoc = [S.loc.trangThai === '*' ? 'Tất cả trạng thái' : (S.loc.trangThai || 'Đang lưu trú'), S.loc.maCoSo ? 'cơ sở ' + S.loc.maCoSo : '', S.loc.loai ? 'hình thức ' + S.loc.loai : '',
       S.loc.tu ? 'đến từ ' + vn(S.loc.tu) : '', S.loc.den ? 'đến trước ' + vn(S.loc.den) : '', S.loc.q ? 'tìm "' + S.loc.q + '"' : ''].filter(String).join(', ');
-    xuatExcel('TamTru_khach_' + tenPhamVi() + '_' + ngayFile() + '.xlsx', [{ ten: 'Khách tạm trú', dong: dongKhach(ds), cot: COT_KHACH }],
+    return xuatExcel('TamTru_khach_' + tenPhamVi() + '_' + ngayFile() + '.xlsx', [{ ten: 'Khách tạm trú', dong: dongKhach(ds), cot: COT_KHACH }],
       [['Bộ lọc', boLoc], ['Số dòng', ds.length]], { bang: 'TamTru', noiDung: ds.length + ' khách · ' + boLoc });
   }
 
@@ -2200,7 +2217,7 @@
     var t = layDem('tongQuan');
     if (!t) return toast('Chưa tải xong số liệu tổng quan.', 'canh');
     var napKh = layDem('dsTamTru') ? Promise.resolve(layDem('dsTamTru')) : goi('dsTamTru', {}).then(function (d) { datDem('dsTamTru', d); return d; });
-    Promise.all([napKh, napCoSo()]).then(function (kq) {
+    return Promise.all([napKh, napCoSo()]).then(function (kq) {
       var kh = kq[0], cs = kq[1], hn = homNay(), thang = thangVN(t.coSo.thangKiemTra || hn);
       var dangO = kh.filter(function (r) { return r.TrangThai !== 'Đã rời đi'; });
       var homNayDK = kh.filter(function (r) { return String(r.NgayTao || '').slice(0, 10) === hn; });
@@ -2230,7 +2247,7 @@
         dong: Object.keys(t.coSo.theoCSKV).map(function (x) { return { k: x, cs: t.coSo.theoCSKV[x].coSo, kh: t.coSo.theoCSKV[x].khachDangO }; }) });
       bang.push({ ten: 'Đã KT ' + thang.replace('/', '-'), cot: cotCS, dong: dongCS(daKT) });
       bang.push({ ten: 'Chưa KT ' + thang.replace('/', '-'), cot: cotCS, dong: dongCS(chuaKT) });
-      xuatExcel('TamTru_tongquan_' + tenPhamVi() + '_' + ngayFile() + '.xlsx', bang, [['Báo cáo', 'Tổng quan – số liệu đến ngày ' + vn(t.homNay)]],
+      return xuatExcel('TamTru_tongquan_' + tenPhamVi() + '_' + ngayFile() + '.xlsx', bang, [['Báo cáo', 'Tổng quan – số liệu đến ngày ' + vn(t.homNay)]],
         { bang: 'TongQuan', noiDung: 'Báo cáo tổng quan ' + vn(t.homNay) + ': ' + dangO.length + ' khách đang lưu trú, ' + cs.length + ' cơ sở' });
     });
   }
@@ -2241,7 +2258,7 @@
     var L = S.locCS;
     var boLoc = [L.loaiHinh || 'Mọi loại hình', L.cskv ? 'CSKV ' + L.cskv : '', L.tdp ? 'tổ ' + L.tdp : '', L.kt ? (L.kt === 'da' ? 'đã' : 'chưa') + ' kiểm tra ' + thangVN(homNay()) : '', L.q ? 'tìm "' + L.q + '"' : ''].filter(String).join(', ');
     var dong = ds.map(function (c) { var o = {}; for (var k in c) o[k] = c[k]; o.KTThang = c.DaKiemTraThang ? 'Đã kiểm tra' : 'Chưa'; o.NgayKT = c.NgayKiemTraThang ? vn(c.NgayKiemTraThang) : (c.KiemTraTheoPhieu ? 'Theo phiếu thống kê' : ''); if (c.NgayKyCamKet) o.NgayKyCamKet = vn(c.NgayKyCamKet); return o; });
-    xuatExcel('TamTru_coso_' + tenPhamVi() + '_' + ngayFile() + '.xlsx', [{ ten: 'Cơ sở lưu trú', dong: dong, cot: [
+    return xuatExcel('TamTru_coso_' + tenPhamVi() + '_' + ngayFile() + '.xlsx', [{ ten: 'Cơ sở lưu trú', dong: dong, cot: [
       ['MaCoSo', 'Mã', 1], ['TenCoSo', 'Tên cơ sở', 1], ['LoaiHinh', 'Loại hình', 1], ['DiaChi', 'Địa chỉ', 1], ['NguoiQuanLy', 'Người quản lý', 1], ['SoDienThoai', 'Số điện thoại', 1],
       ['DiaChiNguoiQuanLy', 'Địa chỉ chủ cơ sở', 1], ['SoLuongPhong', 'Số phòng'], ['SoNhanKhauKhaiBao', 'Nhân khẩu khai báo'], ['ToDanPho', 'Tổ dân phố', 1], ['CSKV', 'CSKV', 1],
       ['DangKyKinhDoanh', 'Đăng ký kinh doanh', 1], ['MaSoThue', 'Mã số thuế', 1], ['DaTuyenTruyen', 'Tuyên truyền, ký cam kết', 1], ['NgayKyCamKet', 'Ngày ký cam kết', 1],
@@ -2307,7 +2324,7 @@
         '<ul>' + b.coSo.chuaKiemTra.map(function (c) { return '<li><button type="button" data-xem-coso="' + esc(c.MaCoSo) + '" class="w-full flex items-center gap-3 px-4 sm:px-5 py-2.5 min-h-14 border-t border-line text-left hover:bg-canvas/60"><span class="min-w-0 flex-1"><b class="block text-sm font-medium truncate">' + esc(c.TenCoSo) + '</b><span class="block text-xs text-muted truncate">' + esc([c.LoaiHinh, c.DiaChi, c.ToDanPho ? 'Tổ ' + c.ToDanPho : '', c.CSKV ? 'CSKV ' + c.CSKV : ''].filter(Boolean).join(' · ')) + '</span></span>' + ic('chev', 'size-4 text-muted shrink-0') + '</button></li>'; }).join('') +
         '</ul></details></section>';
       var nut = $('#bcXuat'); nut.disabled = false;
-      nut.onclick = function () { xuatBaoCao(b); };
+      nut.onclick = function () { xuatVoiTrangThai(nut, function () { return xuatBaoCao(b); }); };
     }).catch(function () { if ($('#bcND')) $('#bcND').innerHTML = trong('Không lập được báo cáo', 'Thử lại sau.'); });
   }
 
@@ -2327,7 +2344,7 @@
     if (b.theoCSKV) bang.push({ ten: 'Theo CSKV', cot: [['k', 'CSKV', 1], ['v', 'Lượt đến']], dong: doiBang(b.theoCSKV) });
     bang.push({ ten: 'Top cơ sở', cot: [['MaCoSo', 'Mã', 1], ['TenCoSo', 'Tên cơ sở', 1], ['DiaChi', 'Địa chỉ', 1], ['CSKV', 'CSKV', 1], ['luot', 'Lượt đến']], dong: b.topCoSo });
     bang.push({ ten: 'Chưa kiểm tra ' + thangVN(b.thang).replace('/', '-'), cot: [['MaCoSo', 'Mã', 1], ['TenCoSo', 'Tên cơ sở', 1], ['LoaiHinh', 'Loại hình', 1], ['DiaChi', 'Địa chỉ', 1], ['ToDanPho', 'Tổ', 1], ['CSKV', 'CSKV', 1]], dong: b.coSo.chuaKiemTra });
-    xuatExcel('TamTru_baocao_' + b.thang.replace('-', '') + '_' + tenPhamVi() + '.xlsx', bang, [['Tháng', b.thang], ['Khoảng ngày', vn(b.tuNgay) + ' – ' + vn(b.denNgay)]], { bang: 'BaoCao', noiDung: 'Báo cáo tháng ' + b.thang });
+    return xuatExcel('TamTru_baocao_' + b.thang.replace('-', '') + '_' + tenPhamVi() + '.xlsx', bang, [['Tháng', b.thang], ['Khoảng ngày', vn(b.tuNgay) + ' – ' + vn(b.denNgay)]], { bang: 'BaoCao', noiDung: 'Báo cáo tháng ' + b.thang });
   }
 
   // ---------- Điều hướng & sự kiện chung ----------
@@ -2426,7 +2443,7 @@
     if ('chonNhieu' in d) { S.chonCS = S.chonCS ? null : {}; $$('[data-chon-nhieu]').forEach(function (b) { b.setAttribute('aria-pressed', String(!!S.chonCS)); }); return veDsCoSo(); }
     if ('tichCs' in d) { if (S.chonCS[d.tichCs]) delete S.chonCS[d.tichCs]; else S.chonCS[d.tichCs] = 1; return veDsCoSo(); }
     if ('bulk' in d) return bulkCoSo(d.bulk);
-    if ('xuatTq' in d) return xuatTongQuan();
+    if ('xuatTq' in d) return xuatVoiTrangThai(t, xuatTongQuan);
     if ('xemDs' in d) {
       var locMoi = { q: '', trangThai: '', maCoSo: '', tu: '', den: '', loai: '' };
       if (d.xemDs === 'ct10') { locMoi.ct10 = true; S.loc = locMoi; location.hash = '#/tam-tru'; }
@@ -2445,8 +2462,8 @@
     if ('locLoai' in d) { S.locCS = { q: '', loaiHinh: d.locLoai, cskv: '', tdp: '' }; location.hash = '#/co-so'; return; }
     if ('locCskv' in d) { S.locCS = { q: '', loaiHinh: '', cskv: d.locCskv, tdp: '' }; location.hash = '#/co-so'; return; }
     if ('traCuu' in d) return traCuuCCCD(d.traCuu);
-    if ('xuatKhach' in d) return xuatKhach();
-    if ('xuatCoso' in d) return xuatCoSo();
+    if ('xuatKhach' in d) return xuatVoiTrangThai(t, xuatKhach);
+    if ('xuatCoso' in d) return xuatVoiTrangThai(t, xuatCoSo);
     if ('duyetCb' in d) return formDuyet(dsCB.filter(function (x) { return x.MaCanBo === d.duyetCb; })[0]);
     if ('tuchoiCb' in d) return tuChoi(d.tuchoiCb);
     if ('themCsThu' in d) return formCoSo(null, true);
@@ -2595,7 +2612,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.6.1';
+  var PB_GIAO_DIEN = '2.6.2';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
