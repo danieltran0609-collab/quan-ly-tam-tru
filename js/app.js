@@ -83,6 +83,9 @@
   var laLanhDao = function () { return S.user && S.user.Quyen === 'LanhDao'; };
   var duocGhi = function () { return S.user && (S.user.Quyen === 'Admin' || S.user.Quyen === 'CanBo'); };
   var duocGhiBanGhi = function (r) { return duocGhi() || (laLanhDao() && r && r.DuLieuThu === true); };
+  /** Mô tả ngắn địa bàn của phạm vi (pv từ máy chủ: {toanPhuong, cskv?, to?, soCoSo?}): "Tổ 1, 5" hoặc "CSKV Huy". */
+  var moTaDiaBanNgan = function (pv) { return (pv && pv.to && pv.to.length) ? 'Tổ ' + pv.to.join(', ') : 'CSKV ' + ((pv && pv.cskv) || '(chưa gắn)'); };
+  var moTaDiaBanDay = function (pv) { return !pv || pv.toanPhuong ? 'Toàn phường' : 'Địa bàn ' + moTaDiaBanNgan(pv); };
 
   var TRANG = [
     { id: 'tong-quan', ten: 'Tổng quan', ic: 'home' },
@@ -138,7 +141,7 @@
     $('#view').innerHTML = dauTrang('Tài khoản', '') +
       '<div class="card p-4 flex items-center gap-4"><span class="grid place-items-center size-14 shrink-0 rounded-full bg-peach text-peach-ink text-xl font-semibold">' + esc(chu) + '</span>' +
       '<span class="min-w-0"><b class="block truncate">' + esc(u.HoTen || '(chưa có họ tên)') + '</b><span class="block text-sm text-muted truncate">' + esc(u.Email) + '</span>' +
-      '<span class="flex flex-wrap gap-1.5 mt-1.5"><span class="badge bg-lilac text-lilac-ink">' + esc(quyen) + '</span><span class="badge bg-canvas text-ink">' + (pv.toanPhuong ? 'Toàn phường' : 'CSKV ' + esc(pv.cskv || '(chưa gắn)') + ' · ' + soVN(pv.soCoSo) + ' cơ sở') + '</span></span></span></div>' +
+      '<span class="flex flex-wrap gap-1.5 mt-1.5"><span class="badge bg-lilac text-lilac-ink">' + esc(quyen) + '</span><span class="badge bg-canvas text-ink">' + (pv.toanPhuong ? 'Toàn phường' : esc(moTaDiaBanNgan(pv)) + ' · ' + soVN(pv.soCoSo) + ' cơ sở') + '</span></span></span></div>' +
       nhom('Quản lý', [
         laAdmin() ? o('#/can-bo', 'shield', 'Cán bộ quản lý', 'Duyệt yêu cầu truy cập, phân quyền, gán CSKV', S.soChoDuyet ? '<span class="badge bg-rose text-rose-ink shrink-0">' + S.soChoDuyet + ' chờ duyệt</span>' : '') : '',
         duocGhi() ? o('#/bo-sung', 'alert', 'Bổ sung dữ liệu cơ sở', 'Cơ sở thiếu số điện thoại, số phòng, đăng ký kinh doanh…') : '',
@@ -459,11 +462,11 @@
       var ghi = duocGhi();
 
       var pv = S.phamVi || { toanPhuong: true };
-      var moTa = (pv.toanPhuong ? 'Toàn phường' : 'Địa bàn CSKV ' + esc(pv.cskv || '(chưa gắn)') + ' · ' + soVN(pv.soCoSo) + ' cơ sở') + ' · số liệu đến ngày ' + vn(t.homNay);
+      var moTa = (pv.toanPhuong ? 'Toàn phường' : esc(moTaDiaBanDay(pv)) + ' · ' + soVN(pv.soCoSo) + ' cơ sở') + ' · số liệu đến ngày ' + vn(t.homNay);
       var html = dauTrang('Tổng quan', moTa, ghi && (pv.toanPhuong || pv.soCoSo) ? '<button class="btn-primary" data-them-khach>' + ic('plus') + 'Đăng ký khách</button>' : '',
         nutCongCu('data-xuat-tq', 'down', 'Xuất Excel')) +
         '<p class="sm:hidden -mt-3 mb-3 text-xs text-muted">' + moTa + '</p>' +
-        (!pv.toanPhuong && !pv.soCoSo ? '<div class="flex gap-2 items-start rounded-2xl bg-butter text-butter-ink px-4 py-3 text-sm mb-3">' + ic('alert', 'size-4 mt-0.5 shrink-0') + '<span>Tài khoản của bạn ' + (pv.cskv ? 'gắn CSKV <b>' + esc(pv.cskv) + '</b> nhưng chưa có cơ sở nào mang tên CSKV này' : 'chưa được gắn CSKV') + '. Liên hệ Admin để gắn đúng địa bàn.</span></div>' : '') +
+        (!pv.toanPhuong && !pv.soCoSo ? '<div class="flex gap-2 items-start rounded-2xl bg-butter text-butter-ink px-4 py-3 text-sm mb-3">' + ic('alert', 'size-4 mt-0.5 shrink-0') + '<span>Tài khoản của bạn ' + ((pv.cskv || (pv.to && pv.to.length)) ? 'gắn <b>' + esc(moTaDiaBanNgan(pv)) + '</b> nhưng chưa có cơ sở nào phù hợp' : 'chưa được gắn địa bàn') + '. Liên hệ Admin để gắn đúng địa bàn.</span></div>' : '') +
         '<div class="card grid grid-cols-2 lg:grid-cols-4 divide-line overflow-hidden mb-3 lg:mb-6 [&>a:nth-child(odd)]:border-r [&>a:nth-child(-n+2)]:border-b lg:[&>a]:border-b-0 lg:[&>a]:border-r lg:[&>a:last-child]:border-r-0 [&>a]:border-line">' +
         oSo('Đang lưu trú', t.khach.dangLuuTru, 'người', 'bg-mint text-mint-ink', 'users', '#/tam-tru') +
         oSo('Sắp hết hạn', k['Sắp hết hạn'], 'người', 'bg-butter text-butter-ink', 'clock', '#/tam-tru/Sắp hết hạn') +
@@ -493,6 +496,13 @@
             return dongKhachTQ(r, esc(r.TenCoSo) + (r.SoPhong ? ' · P.' + esc(r.SoPhong) : '') + ' · đến ' + vn(r.NgayDen)) +
               (duocGhiBanGhi(r) ? '<span class="pr-2 sm:pr-3 shrink-0">' + nutDongTQ('data-toggle-ct10="' + esc(r.ID) + '"', 'check', 'Đánh dấu đã gửi CT10', 'bg-brand-50 text-brand-600') + '</span>' : '') + '</li>';
           }).join('') + (t.soCanGuiCT10 > t.canGuiCT10.length ? '<li class="border-t border-line"><a href="#/tam-tru" data-xem-ds="ct10" class="block px-4 sm:px-5 py-2.5 text-xs text-brand-600">Xem thêm ' + soVN(t.soCanGuiCT10 - t.canGuiCT10.length) + ' người</a></li>' : '') + '</ul></section>' : '') +
+        // Cán bộ có cơ sở chưa kiểm tra trong tháng (chỉ Admin/Lãnh đạo, xem toàn phường)
+        (t.canBoChuaKiemTra ? '<section class="card mt-3 lg:mt-6 overflow-hidden">' + dauMuc('Cán bộ có cơ sở chưa kiểm tra', thangVN(t.coSo.thangKiemTra) + (t.canBoChuaKiemTra.length ? ' · ' + soVN(t.canBoChuaKiemTra.length) + ' cán bộ' : ''), lienKetXem('#/can-bo')) +
+          (t.canBoChuaKiemTra.length ? '<ul>' + t.canBoChuaKiemTra.slice(0, 20).map(function (x) {
+            return '<li class="flex items-center gap-3 px-4 sm:px-5 py-2.5 min-h-14 border-t border-line"><span class="min-w-0 flex-1"><b class="block text-sm font-medium truncate">' + esc(x.HoTen || x.MaCanBo) + '</b><span class="block text-xs text-muted truncate">' + esc(x.diaBan) + '</span></span>' +
+              '<b class="shrink-0 text-sm font-semibold text-butter-ink">' + soVN(x.chuaKiemTra) + '</b><span class="shrink-0 text-xs text-muted">cơ sở</span></li>';
+          }).join('') + (t.canBoChuaKiemTra.length > 20 ? '<li class="border-t border-line"><a href="#/can-bo" class="block px-4 sm:px-5 py-2.5 text-xs text-brand-600">Xem thêm ' + soVN(t.canBoChuaKiemTra.length - 20) + ' cán bộ</a></li>' : '') + '</ul>'
+            : '<div class="flex items-center gap-3 px-4 sm:px-5 pb-4"><span class="grid place-items-center size-9 shrink-0 rounded-xl bg-mint text-mint-ink">' + ic('check', 'size-5') + '</span><p class="text-sm text-muted">Mọi cán bộ đều đã kiểm tra hết cơ sở phụ trách trong tháng.</p></div>') + '</section>' : '') +
         // Theo CSKV (chỉ Admin – người khác chỉ có 1 địa bàn)
         (!pv.toanPhuong ? '' : '<section class="card mt-3 lg:mt-6 overflow-hidden">' + dauMuc('Theo cảnh sát khu vực', 'Số cơ sở phụ trách và khách đang lưu trú') +
         '<ul>' + cskv.map(function (c) {
@@ -1504,7 +1514,8 @@
     ten: ['Tên chung chung', 'bg-sky text-sky-ink', 'Tên chỉ là loại hình (vd "Nhà trọ"), khó phân biệt'],
     diachi: ['Trùng địa chỉ', 'bg-rose text-rose-ink', 'Có cơ sở khác cùng địa chỉ – kiểm tra có nhập 2 lần không'],
     phong: ['Thiếu số phòng', 'bg-lilac text-lilac-ink', 'Chưa ghi số lượng phòng'],
-    dkkd: ['Chưa ghi ĐKKD', 'bg-peach text-peach-ink', 'Chưa chọn có/không đăng ký kinh doanh, hoặc thiếu mã số thuế']
+    dkkd: ['Chưa ghi ĐKKD', 'bg-peach text-peach-ink', 'Chưa chọn có/không đăng ký kinh doanh, hoặc thiếu mã số thuế'],
+    tt: ['Chưa tuyên truyền', 'bg-mint text-mint-ink', 'Chưa tích đã tuyên truyền, ký cam kết phòng chống tội phạm']
   };
   var chuanDC = function (s) { return boDau(s).replace(/[.,;]/g, ' ').replace(/\s+/g, ' ').trim(); };
   /** Cơ sở đang hoạt động còn thiếu thông tin: [{ c, loi: ['sdt'|'ten'|'diachi'|'phong'], trung: [mã cơ sở cùng địa chỉ] }] */
@@ -1519,6 +1530,7 @@
       if (trung.length) loi.push('diachi');
       if (c.SoLuongPhong === '' || c.SoLuongPhong == null) loi.push('phong');
       if (!c.DangKyKinhDoanh || (c.DangKyKinhDoanh === 'Có' && !c.MaSoThue)) loi.push('dkkd');
+      if (c.DaTuyenTruyen !== 'Có') loi.push('tt');
       return { c: c, loi: loi, trung: trung };
     }).filter(function (x) { return x.loi.length; });
   }
@@ -1605,12 +1617,13 @@
       dong('Địa chỉ chủ cơ sở', esc(c.DiaChiNguoiQuanLy)) + dong('Số phòng', c.SoLuongPhong === '' ? '' : soVN(c.SoLuongPhong)) + dong('Nhân khẩu khai báo', c.SoNhanKhauKhaiBao === '' ? '' : soVN(c.SoNhanKhauKhaiBao) + ' <span class="text-xs text-muted">(theo phiếu thống kê' + (c.NgayKhaiBao ? ' ' + vn(c.NgayKhaiBao) : '') + ')</span>') +
       dong('Tổ dân phố', esc(c.ToDanPho)) + dong('CSKV', esc(c.CSKV)) +
       dong('Đăng ký kinh doanh', c.DangKyKinhDoanh === 'Có' ? 'Có' + (c.MaSoThue ? ' · MST <b class="font-medium tracking-wide">' + esc(c.MaSoThue) + '</b>' : ' <span class="text-xs text-rose-ink">(chưa ghi mã số thuế)</span>') : esc(c.DangKyKinhDoanh)) +
+      dong('Tuyên truyền, ký cam kết', c.DaTuyenTruyen === 'Có' ? '<span class="text-mint-ink">Đã tuyên truyền, ký cam kết</span>' + (c.NgayKyCamKet ? ' · ' + vn(c.NgayKyCamKet) : '') : c.DaTuyenTruyen === 'Không' ? '<span class="text-rose-ink">Chưa tuyên truyền</span>' : '') +
       dong('Kiểm tra ' + thangVN(homNay()), oKiemTraChiTiet(c)) +
       dong('Hoạt động', esc(c.TrangThaiHoatDong)) + dong('Ghi chú', esc(c.GhiChu)) + (laAdmin() ? dong('Nguồn', '<span class="text-xs text-muted">' + esc(c.NguonDuLieu) + '</span>') : '') +
       (c.DuLieuThu === true ? dong('', '<span class="badge bg-mint text-mint-ink">Dữ liệu thử – không tính vào thống kê</span>') : '') + '</dl>' +
       '<div id="csKhach" class="mt-6"></div>' +
       '</div>' +
-      (duocGhiBanGhi(c) ? '<footer class="flex items-center gap-2 px-4 sm:px-6 py-4 border-t border-line">' + (laAdmin() || (laLanhDao() && c.DuLieuThu === true) ? '<button class="btn-danger px-3" data-xoa-coso="' + esc(c.MaCoSo) + '" title="Xoá">' + ic('trash') + '<span class="hidden sm:inline">Xoá</span></button>' : '') +
+      (duocGhiBanGhi(c) ? '<footer class="flex items-center gap-2 px-4 sm:px-6 py-4 border-t border-line">' + '<button class="btn-danger px-3" data-xoa-coso="' + esc(c.MaCoSo) + '" title="Xoá">' + ic('trash') + '<span class="hidden sm:inline">Xoá</span></button>' +
         '<span class="flex-1"></span><button class="btn-soft" data-sua-coso="' + esc(c.MaCoSo) + '">' + ic('edit') + 'Sửa</button>' +
         (c.TrangThaiHoatDong !== 'Dừng hoạt động' ? '<button class="btn-primary" data-them-khach="' + esc(c.MaCoSo) + '">' + ic('plus') + 'Đăng ký khách</button>' : '') + '</footer>' : ''));
     $('#drawer').dataset.ma = c.MaCoSo;
@@ -1666,11 +1679,18 @@
         return '<label><input type="radio" name="DangKyKinhDoanh" value="' + v + '" class="peer sr-only"' + (c.DangKyKinhDoanh === v ? ' checked' : '') + '><span class="flex h-10 items-center justify-center rounded-xl border border-line text-sm cursor-pointer peer-checked:bg-brand-50 peer-checked:border-brand peer-checked:text-brand-600">' + (v === 'Có' ? 'Có đăng ký kinh doanh' : 'Không đăng ký') + '</span></label>';
       }).join('') + '</div></div>' +
       '<div id="oMST" class="col-span-2' + (c.DangKyKinhDoanh === 'Có' ? '' : ' hidden') + '"><label class="lbl" for="MaSoThue">Mã số thuế</label><input id="MaSoThue" name="MaSoThue" class="inp tracking-wide" inputmode="numeric" maxlength="14" placeholder="10 chữ số (chi nhánh: 0101234567-001)" value="' + esc(c.MaSoThue) + '"></div>' +
+      '<div class="col-span-2"><span class="lbl">Tuyên truyền, ký cam kết</span><div class="grid grid-cols-2 gap-2">' + ['Có', 'Không'].map(function (v) {
+        return '<label><input type="radio" name="DaTuyenTruyen" value="' + v + '" class="peer sr-only"' + (c.DaTuyenTruyen === v ? ' checked' : '') + '><span class="flex h-10 items-center justify-center rounded-xl border border-line text-sm cursor-pointer peer-checked:bg-brand-50 peer-checked:border-brand peer-checked:text-brand-600">' + (v === 'Có' ? 'Đã tuyên truyền, ký cam kết' : 'Chưa tuyên truyền') + '</span></label>';
+      }).join('') + '</div></div>' +
+      '<div id="oNgayTT" class="col-span-2 sm:col-span-1' + (c.DaTuyenTruyen === 'Có' ? '' : ' hidden') + '"><label class="lbl" for="NgayKyCamKet_g">Ngày ký cam kết</label>' + oNgay('NgayKyCamKet', c.NgayKyCamKet, { max: homNay(), nhan: 'Ngày ký cam kết' }) + '</div>' +
       '<div class="col-span-2"><label class="lbl" for="GhiChuCS">Ghi chú</label><textarea id="GhiChuCS" name="GhiChu" rows="2" class="inp h-auto py-2">' + esc(c.GhiChu) + '</textarea></div>' +
       '<p id="fLoi" class="col-span-2 hidden text-sm bg-rose text-rose-ink rounded-xl px-3 py-2"></p></form>' +
       '<footer class="flex gap-2 px-5 sm:px-6 py-4 border-t border-line"><button data-close class="btn-ghost">Huỷ</button><span class="flex-1"></span><button id="fLuu" form="fCS" class="btn-primary min-w-28">' + (moi ? 'Thêm' : 'Lưu thay đổi') + '</button></footer>');
     var f = $('#fCS');
-    f.addEventListener('change', function (e) { if (e.target.name === 'DangKyKinhDoanh') $('#oMST').classList.toggle('hidden', e.target.value !== 'Có'); });
+    f.addEventListener('change', function (e) {
+      if (e.target.name === 'DangKyKinhDoanh') $('#oMST').classList.toggle('hidden', e.target.value !== 'Có');
+      if (e.target.name === 'DaTuyenTruyen') $('#oNgayTT').classList.toggle('hidden', e.target.value !== 'Có');
+    });
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var d = {};
@@ -1678,6 +1698,10 @@
       var dk = f.querySelector('[name=DangKyKinhDoanh]:checked'); d.DangKyKinhDoanh = dk ? dk.value : '';
       d.MaSoThue = d.DangKyKinhDoanh === 'Có' ? f.MaSoThue.value.replace(/\s+/g, '') : '';
       if (d.MaSoThue && !/^\d{10}(-?\d{3})?$/.test(d.MaSoThue)) { $('#fLoi').textContent = 'Mã số thuế gồm 10 chữ số (chi nhánh: 10 số, dấu -, 3 số).'; $('#fLoi').classList.remove('hidden'); return; }
+      var tt = f.querySelector('[name=DaTuyenTruyen]:checked'); d.DaTuyenTruyen = tt ? tt.value : '';
+      var loiNgayTT = kiemNgay(f);
+      if (loiNgayTT) { $('#fLoi').textContent = loiNgayTT; $('#fLoi').classList.remove('hidden'); return; }
+      d.NgayKyCamKet = d.DaTuyenTruyen === 'Có' ? f.NgayKyCamKet.value : '';
       var loi = !d.TenCoSo ? 'Chưa nhập tên cơ sở.' : !d.LoaiHinh ? 'Chưa chọn loại hình.' : !d.DiaChi ? 'Chưa nhập địa chỉ.' : '';
       if (loi) { $('#fLoi').textContent = loi; $('#fLoi').classList.remove('hidden'); return; }
       if (!moi) { d.ma = c.MaCoSo; d._phienBan = c.NgayCapNhat; }
@@ -1744,7 +1768,8 @@
         '<ul class="card divide-y divide-line overflow-hidden">' +
         ds.map(function (x) {
           var ten = x.HoTen || (x.CSKV ? 'CSKV ' + x.CSKV : '(chưa có họ tên)');
-          var phu = [x.HoTen && x.CSKV ? 'CSKV ' + x.CSKV : '', x.Email || 'chưa có email', x.PhuongXa || ''].filter(Boolean).join(' · ');
+          var diaBan = x.ToPhuTrach ? 'Tổ ' + x.ToPhuTrach.split(';').join(', ') : (x.CSKV ? 'CSKV ' + x.CSKV : '');
+          var phu = [x.HoTen && diaBan ? diaBan : '', x.Email || 'chưa có email', x.PhuongXa || ''].filter(Boolean).join(' · ');
           return '<li class="flex items-center gap-2 pl-4 pr-2 py-2.5 min-h-14"><div class="min-w-0 flex-1"><div class="flex items-center gap-1.5 flex-wrap"><b class="text-sm font-medium truncate">' + esc(ten) + '</b>' +
             '<span class="badge ' + (mauQ[x.Quyen] || '') + '">' + esc(x.Quyen) + '</span>' + (x.TrangThai !== 'Hoạt động' ? '<span class="badge ' + (mauT[x.TrangThai] || 'bg-fog text-fog-ink') + '">' + esc(x.TrangThai) + '</span>' : '') + '</div>' +
             '<p class="text-xs text-muted truncate mt-0.5">' + esc(phu) + '</p></div>' +
@@ -1857,6 +1882,8 @@
       '<form id="fCB" class="flex-1 overflow-y-auto px-5 sm:px-6 py-5 grid grid-cols-2 gap-3 content-start" novalidate>' +
       o('HoTen', 'Họ và tên', 'col-span-2', 'autofocus') + o('Email', 'Email Google (dùng để đăng nhập)', 'col-span-2', 'type="email" autocomplete="off"') +
       o('CSKV', 'Tên CSKV', '') + o('PhuongXa', 'Phường / Xã', '') +
+      '<div class="col-span-2"><label class="lbl" for="ToPhuTrach">Tổ phụ trách <span class="font-normal text-muted normal-case">(để trống nếu phân theo CSKV ở trên)</span></label><input id="ToPhuTrach" name="ToPhuTrach" class="inp tracking-wide" inputmode="numeric" placeholder="Các số Tổ cách nhau bằng dấu ; — vd: 1;2;5" value="' + esc(x.ToPhuTrach) + '"></div>' +
+      '<p class="col-span-2 -mt-2 text-xs text-muted">Một cán bộ có thể phụ trách nhiều Tổ. Khi đã điền, địa bàn của cán bộ sẽ tính theo các Tổ này thay vì theo CSKV.</p>' +
       sel('Quyen', dm.Quyen, 'Quyền') + sel('TrangThai', dm.TrangThaiCanBo, 'Trạng thái') +
       '<div class="col-span-2"><label class="lbl" for="GhiChuCB">Ghi chú</label><input id="GhiChuCB" name="GhiChu" class="inp" value="' + esc(x.GhiChu) + '"></div>' +
       '<p class="col-span-2 text-xs text-muted">Admin: toàn quyền, quản lý cán bộ, xoá bản ghi · CanBo: đăng ký, sửa khách và cơ sở · Xem: chỉ xem.</p>' +
@@ -1866,7 +1893,8 @@
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var d = {};
-      ['HoTen', 'Email', 'CSKV', 'PhuongXa', 'Quyen', 'TrangThai', 'GhiChu'].forEach(function (k) { d[k] = f[k].value.trim(); });
+      ['HoTen', 'Email', 'CSKV', 'PhuongXa', 'ToPhuTrach', 'Quyen', 'TrangThai', 'GhiChu'].forEach(function (k) { d[k] = f[k].value.trim(); });
+      if (d.ToPhuTrach && !/^\d+(\s*;\s*\d+)*$/.test(d.ToPhuTrach)) { $('#fLoi').textContent = 'Tổ phụ trách chỉ gồm số, cách nhau bằng dấu ";" (vd: 1;2;5).'; $('#fLoi').classList.remove('hidden'); return; }
       if (!moi) { d.ma = x.MaCanBo; d._phienBan = x.NgayCapNhat; }
       API.goi(moi ? 'themCanBo' : 'suaCanBo', d).then(function () { sauKhiGhi('canbo'); toast('Đã lưu'); dongNganKeo(); lamMoi(); })
         .catch(function (err) { $('#fLoi').textContent = err.message; $('#fLoi').classList.remove('hidden'); });
@@ -2076,7 +2104,7 @@
   function xuatExcel(tenFile, bang, thongTin, nhatKy) {
     return napThuVien('XLSX').then(function (X) {
       var wb = X.utils.book_new(), luc = new Date().toLocaleString('vi-VN');
-      var phamVi = S.phamVi && !S.phamVi.toanPhuong ? 'Địa bàn CSKV ' + S.phamVi.cskv : 'Toàn phường';
+      var phamVi = moTaDiaBanDay(S.phamVi);
       var tt = [['Hệ thống', 'Quản lý Tạm trú tại Cơ sở Lưu trú'], ['Người xuất', (S.user.HoTen || '') + ' <' + S.user.Email + '>'], ['Thời điểm', luc], ['Phạm vi', phamVi]]
         .concat(thongTin || []).concat(bang.map(function (b) { return ['Trang “' + b.ten + '”', b.dong.length + ' dòng']; }));
       var sh0 = trangTinh(X, 'THÔNG TIN BÁO CÁO', 'Tệp ' + tenFile, ['Mục', 'Nội dung'], tt.map(function (x) { return [x[0], x[1] == null ? '' : x[1]]; }), [true, true]);
@@ -2106,7 +2134,7 @@
     }).catch(function (e) { toast(e.message, 'loi'); });
   }
   var ngayFile = function () { return homNay().replace(/-/g, ''); };
-  var tenPhamVi = function () { return S.phamVi && !S.phamVi.toanPhuong ? boDau(S.phamVi.cskv).replace(/[^a-z0-9]+/g, '') : 'toanphuong'; };
+  var tenPhamVi = function () { return S.phamVi && !S.phamVi.toanPhuong ? boDau(S.phamVi.to && S.phamVi.to.length ? 'To' + S.phamVi.to.join('-') : S.phamVi.cskv).replace(/[^a-z0-9]+/g, '') : 'toanphuong'; };
 
   function xuatKhach() {
     var ds = S.khachDangXem || [];
@@ -2146,8 +2174,8 @@
         ['Cơ sở lưu trú', t.coSo.tong, 'cơ sở'], ['— Dừng hoạt động', t.coSo.dungHoatDong, 'cơ sở'], ['— Đã kiểm tra ' + thang, t.coSo.daKiemTra, 'cơ sở'], ['— Đang hoạt động chưa kiểm tra ' + thang, chuaKT.length, 'cơ sở']
       ].map(function (x) { return { k: x[0], v: x[1], dv: x[2] }; });
       var cotCS = [['MaCoSo', 'Mã', 1], ['TenCoSo', 'Tên cơ sở', 1], ['LoaiHinh', 'Loại hình', 1], ['DiaChi', 'Địa chỉ', 1], ['NguoiQuanLy', 'Người quản lý', 1], ['SoDienThoai', 'Số điện thoại', 1],
-        ['ToDanPho', 'Tổ', 1], ['CSKV', 'CSKV', 1], ['DangKyKinhDoanh', 'Đăng ký KD', 1], ['MaSoThue', 'Mã số thuế', 1], ['NgayKT', 'Ngày kiểm tra', 1], ['KhachDangO', 'Khách đang ở']];
-      var dongCS = function (ds) { return ds.map(function (c) { var o = {}; for (var x in c) o[x] = c[x]; o.NgayKT = c.NgayKiemTraThang ? vn(c.NgayKiemTraThang) : (c.KiemTraTheoPhieu ? 'Theo phiếu thống kê' : ''); return o; }); };
+        ['ToDanPho', 'Tổ', 1], ['CSKV', 'CSKV', 1], ['DangKyKinhDoanh', 'Đăng ký KD', 1], ['MaSoThue', 'Mã số thuế', 1], ['DaTuyenTruyen', 'Tuyên truyền, ký cam kết', 1], ['NgayKT', 'Ngày kiểm tra', 1], ['KhachDangO', 'Khách đang ở']];
+      var dongCS = function (ds) { return ds.map(function (c) { var o = {}; for (var x in c) o[x] = c[x]; o.NgayKT = c.NgayKiemTraThang ? vn(c.NgayKiemTraThang) : (c.KiemTraTheoPhieu ? 'Theo phiếu thống kê' : ''); if (c.NgayKyCamKet) o.NgayKyCamKet = vn(c.NgayKyCamKet); return o; }); };
       var bang = [
         { ten: 'Tổng hợp', cot: [['k', 'Chỉ tiêu'], ['v', 'Số lượng'], ['dv', 'Đơn vị']], dong: tongHop },
         { ten: 'Đăng ký hôm nay', cot: COT_KHACH, dong: dongKhach(homNayDK) },
@@ -2170,11 +2198,11 @@
     if (!ds.length) return toast('Không có dòng nào để xuất.', 'canh');
     var L = S.locCS;
     var boLoc = [L.loaiHinh || 'Mọi loại hình', L.cskv ? 'CSKV ' + L.cskv : '', L.tdp ? 'tổ ' + L.tdp : '', L.kt ? (L.kt === 'da' ? 'đã' : 'chưa') + ' kiểm tra ' + thangVN(homNay()) : '', L.q ? 'tìm "' + L.q + '"' : ''].filter(String).join(', ');
-    var dong = ds.map(function (c) { var o = {}; for (var k in c) o[k] = c[k]; o.KTThang = c.DaKiemTraThang ? 'Đã kiểm tra' : 'Chưa'; o.NgayKT = c.NgayKiemTraThang ? vn(c.NgayKiemTraThang) : (c.KiemTraTheoPhieu ? 'Theo phiếu thống kê' : ''); return o; });
+    var dong = ds.map(function (c) { var o = {}; for (var k in c) o[k] = c[k]; o.KTThang = c.DaKiemTraThang ? 'Đã kiểm tra' : 'Chưa'; o.NgayKT = c.NgayKiemTraThang ? vn(c.NgayKiemTraThang) : (c.KiemTraTheoPhieu ? 'Theo phiếu thống kê' : ''); if (c.NgayKyCamKet) o.NgayKyCamKet = vn(c.NgayKyCamKet); return o; });
     xuatExcel('TamTru_coso_' + tenPhamVi() + '_' + ngayFile() + '.xlsx', [{ ten: 'Cơ sở lưu trú', dong: dong, cot: [
       ['MaCoSo', 'Mã', 1], ['TenCoSo', 'Tên cơ sở', 1], ['LoaiHinh', 'Loại hình', 1], ['DiaChi', 'Địa chỉ', 1], ['NguoiQuanLy', 'Người quản lý', 1], ['SoDienThoai', 'Số điện thoại', 1],
       ['DiaChiNguoiQuanLy', 'Địa chỉ chủ cơ sở', 1], ['SoLuongPhong', 'Số phòng'], ['SoNhanKhauKhaiBao', 'Nhân khẩu khai báo'], ['ToDanPho', 'Tổ dân phố', 1], ['CSKV', 'CSKV', 1],
-      ['DangKyKinhDoanh', 'Đăng ký kinh doanh', 1], ['MaSoThue', 'Mã số thuế', 1],
+      ['DangKyKinhDoanh', 'Đăng ký kinh doanh', 1], ['MaSoThue', 'Mã số thuế', 1], ['DaTuyenTruyen', 'Tuyên truyền, ký cam kết', 1], ['NgayKyCamKet', 'Ngày ký cam kết', 1],
       ['KTThang', 'Kiểm tra ' + thangVN(homNay()), 1], ['NgayKT', 'Ngày kiểm tra', 1], ['TrangThaiHoatDong', 'Hoạt động', 1], ['KhachDangO', 'Khách đang ở'], ['KhachSapHet', 'Sắp hết hạn'], ['KhachQuaHan', 'Quá hạn'], ['GhiChu', 'Ghi chú', 1]] }],
       [['Bộ lọc', boLoc], ['Số dòng', ds.length]], { bang: 'CoSo', noiDung: ds.length + ' cơ sở · ' + boLoc });
   }
@@ -2182,7 +2210,7 @@
   // ================= TRA CỨU THEO CCCD =================
   function traCuuCCCD(soSan) {
     var pv = S.phamVi || { toanPhuong: true };
-    moNganKeo(dauNganKeo('Tra cứu lịch sử tạm trú', pv.toanPhuong ? 'Toàn phường · mỗi lần tra cứu được ghi nhật ký' : 'Trong địa bàn CSKV ' + esc(pv.cskv) + ' · mỗi lần tra cứu được ghi nhật ký') +
+    moNganKeo(dauNganKeo('Tra cứu lịch sử tạm trú', pv.toanPhuong ? 'Toàn phường · mỗi lần tra cứu được ghi nhật ký' : 'Trong ' + esc(moTaDiaBanDay(pv)).replace('Địa bàn ', 'địa bàn ') + ' · mỗi lần tra cứu được ghi nhật ký') +
       '<div class="flex-1 overflow-y-auto px-5 sm:px-6 py-5"><form id="fTraCuu" class="flex gap-2"><input id="tcSo" class="inp tracking-wide" inputmode="text" placeholder="Số CCCD (12 số) hoặc hộ chiếu" value="' + esc(soSan || '') + '" autofocus>' +
       '<button class="btn-primary shrink-0">' + ic('search') + 'Tra cứu</button></form><div id="tcKq" class="mt-5"></div></div>');
     var chay = function () {
@@ -2209,7 +2237,7 @@
   function trangBaoCao() {
     var v = $('#view'), luot = S.luot;
     var thang = S.thangBC || homNay().slice(0, 7);
-    v.innerHTML = dauTrang('Báo cáo tháng', (S.phamVi && !S.phamVi.toanPhuong ? 'Địa bàn CSKV ' + esc(S.phamVi.cskv) : 'Toàn phường') + ' · lượt khách, cơ sở, việc cần kiểm tra', '', nutCongCu('id="bcXuat" disabled', 'down', 'Xuất Excel')) +
+    v.innerHTML = dauTrang('Báo cáo tháng', esc(moTaDiaBanDay(S.phamVi)) + ' · lượt khách, cơ sở, việc cần kiểm tra', '', nutCongCu('id="bcXuat" disabled', 'down', 'Xuất Excel')) +
       '<div class="card px-3 sm:px-4 py-2.5 mb-3 flex items-center gap-2"><label class="text-sm text-muted shrink-0" for="bcThang_g">Tháng</label>' + oNgay('bcThang', thang, { thang: true, max: homNay().slice(0, 7), cls: 'w-36', nhan: 'Tháng báo cáo' }) +
       '<span id="bcKhoang" class="ml-auto text-xs text-muted text-right"></span></div><div id="bcND">' + khungCho(4) + '</div>';
     $('#bcThang').addEventListener('change', function (e) { if (e.target.value) { S.thangBC = e.target.value; trangBaoCao(); } });
@@ -2521,7 +2549,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.5.0';
+  var PB_GIAO_DIEN = '2.6.0';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
