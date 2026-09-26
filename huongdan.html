@@ -45,7 +45,7 @@
       <li>Lần đầu, hệ thống hiện form <b>Gửi yêu cầu truy cập</b>. Điền họ tên, <b>tên CSKV đúng như trong danh sách của phường</b> (ví dụ “Long”, “Cường C”), số điện thoại, rồi bấm Gửi.</li>
       <li>Chờ Admin duyệt. Khi được báo đã duyệt, mở lại hệ thống hoặc bấm <b>Kiểm tra lại</b>.</li>
     </ol>
-    <p class="muted">Mỗi cán bộ chỉ xem và nhập được các cơ sở thuộc địa bàn CSKV của mình. Nếu vào mà thấy 0 cơ sở, báo Admin kiểm tra tên CSKV.</p>
+    <p class="muted">Mỗi cán bộ chỉ xem và nhập được các cơ sở thuộc địa bàn của mình: theo <b>CSKV</b> (mặc định), hoặc theo <b>Tổ phụ trách</b> nếu Admin đã gán riêng (một cán bộ có thể phụ trách nhiều tổ, không nhất thiết trùng CSKV). Nếu vào mà thấy 0 cơ sở, báo Admin kiểm tra CSKV hoặc Tổ phụ trách.</p>
     <p><b>Cài thành ứng dụng trên điện thoại</b> (mở toàn màn hình, không còn thanh địa chỉ của trình duyệt):</p>
     <ul>
       <li><b>iPhone (Safari):</b> mở trang hệ thống → bấm nút <b>Chia sẻ</b> (ô vuông có mũi tên lên) → <b>Thêm vào MH chính</b> → Thêm. Mở từ biểu tượng “Tạm trú” trên màn hình chính.</li>
@@ -82,7 +82,7 @@
       <tr><td><span class="tag" style="background:var(--fog);color:var(--fog-ink)">Đã rời đi</span></td><td>Đã xác nhận rời đi. Hồ sơ vẫn được lưu.</td></tr>
     </table>
     <p class="muted">Trạng thái được tính lại mỗi khi mở hệ thống và tự cập nhật lúc 0 giờ hằng ngày. Trang <b>Tổng quan</b> có mục <b>Cần xử lý</b> liệt kê khách quá hạn và sắp hết hạn.</p>
-    <p><b>Tổng quan</b> còn có mục <b>Đăng ký trong ngày</b> (số người nhập hôm nay theo từng trạng thái), nút <b>Xem danh sách</b> ở mỗi mục, và nút <b>Xuất Excel báo cáo tổng quan</b> – một tệp gồm bảng tổng hợp số liệu và đầy đủ các danh sách (đăng ký hôm nay, cần xử lý, cần gửi CT10, đang lưu trú, theo loại hình, theo CSKV, cơ sở đã/chưa kiểm tra trong tháng).</p>
+    <p><b>Tổng quan</b> còn có mục <b>Đăng ký trong ngày</b> (số người nhập hôm nay theo từng trạng thái), nút <b>Xem danh sách</b> ở mỗi mục, và nút <b>Xuất Excel báo cáo tổng quan</b> – một tệp gồm bảng tổng hợp số liệu và đầy đủ các danh sách (đăng ký hôm nay, cần xử lý, cần gửi CT10, đang lưu trú, theo loại hình, theo CSKV, cơ sở đã/chưa kiểm tra trong tháng). Admin và <b>Lãnh đạo</b> còn thấy mục <b>Cán bộ có cơ sở chưa kiểm tra</b> – biết ngay cán bộ nào (theo CSKV hoặc Tổ phụ trách) đang còn cơ sở chưa kiểm tra trong tháng để nhắc việc đúng người.</p>
   </section>
 
   <section class="card">
@@ -109,7 +109,9 @@
       <li>Bấm vào một cơ sở để xem thông tin và danh sách khách đang ở (gom theo phòng); có nút <b>Đăng ký khách</b> tại cơ sở đó.</li>
       <li><b>Bổ sung dữ liệu:</b> mục <b>Bổ sung dữ liệu</b> (trên điện thoại: thẻ vàng ở Tổng quan hoặc trang Cơ sở) liệt kê cơ sở còn thiếu số điện thoại, số phòng, có tên chung chung (chỉ ghi "Nhà trọ"…) hoặc trùng địa chỉ với cơ sở khác. Khi đi kiểm tra cơ sở, bấm vào cơ sở để điền thông tin thật. Hai cơ sở trùng địa chỉ: nếu là nhập 2 lần thì báo Admin xoá bớt (hoặc chuyển "Dừng hoạt động"); nếu là 2 cơ sở khác nhau thì ghi rõ tên và địa chỉ cụ thể hơn (số nhà, ngõ, ngách) để phân biệt.</li>
       <li>Danh sách dài hiện 50 dòng mỗi lần, bấm <b>Xem thêm</b> ở cuối để hiện tiếp. Xuất Excel vẫn lấy đủ mọi dòng theo bộ lọc.</li>
-      <li>Cơ sở mới do cán bộ thêm sẽ tự thuộc địa bàn của cán bộ đó. Cơ sở ngừng kinh doanh: sửa mục <b>Hoạt động</b> thành “Dừng hoạt động” (không xoá).</li>
+      <li>Cơ sở mới do cán bộ thêm sẽ tự thuộc địa bàn của cán bộ đó (theo CSKV hoặc đúng Tổ mình phụ trách). Cơ sở ngừng kinh doanh: sửa mục <b>Hoạt động</b> thành “Dừng hoạt động” (không xoá).</li>
+      <li><b>Tuyên truyền, ký cam kết:</b> trong form cơ sở chọn <b>Đã tuyên truyền, ký cam kết</b> / <b>Chưa tuyên truyền</b>, chọn Đã thì ghi thêm <b>ngày ký cam kết</b>. Cơ sở chưa tích sẽ nằm trong mục <b>Bổ sung dữ liệu</b> để nhắc đi tuyên truyền.</li>
+      <li><b>Xoá cơ sở:</b> mọi tài khoản được phép ghi dữ liệu thật (Admin, cán bộ trong đúng địa bàn) đều xoá được cơ sở của mình khi nhập nhầm, miễn cơ sở đó không còn khách tạm trú nào (còn khách thì chuyển sang “Dừng hoạt động” thay vì xoá). Lãnh đạo chỉ xoá được cơ sở thử do mình tạo.</li>
     </ul>
   </section>
 
