@@ -1905,28 +1905,52 @@
   }
 
   function formDuyet(x) {
+    napCoSo().then(function (cs) { veFormDuyet(x, cs.filter(function (c) { return c.TrangThaiHoatDong !== 'Dừng hoạt động'; })); });
+  }
+  function veFormDuyet(x, dsCs) {
+    var canBoPT = dsCB.filter(function (c) { return c.TrangThai === 'Hoạt động' && c.Email && (c.Quyen === 'CanBo' || c.Quyen === 'Admin'); });
     var trongCho = dsCB.filter(function (c) { return c.TrangThai === 'Chưa kích hoạt' && !c.Email; });
     var khop = trongCho.filter(function (c) { return x.CSKV && boDau(c.CSKV) === boDau(x.CSKV); })[0];
     moNganKeo(dauNganKeo('Duyệt yêu cầu truy cập', esc(x.MaCanBo) + ' · gửi ' + vnTG(x.NgayTao)) +
       '<form id="fDuyet" class="flex-1 overflow-y-auto px-5 sm:px-6 py-5 flex flex-col gap-4" novalidate>' +
       '<dl class="card px-4 text-sm">' +
-      [['Họ tên', esc(x.HoTen)], ['Email Google', '<b class="font-medium">' + esc(x.Email) + '</b>'], ['CSKV tự khai', esc(x.CSKV) || '—'], ['Ghi chú', esc(x.GhiChu) || '—']].map(function (d) {
+      [['Email Google', '<b class="font-medium">' + esc(x.Email) + '</b>'], ['CSKV tự khai', esc(x.CSKV) || '—'], ['Ghi chú', esc(x.GhiChu) || '—']].map(function (d) {
         return '<div class="flex gap-4 py-2.5 border-b border-line last:border-0"><dt class="w-28 shrink-0 text-muted text-[13px]">' + d[0] + '</dt><dd class="min-w-0 break-words">' + d[1] + '</dd></div>';
       }).join('') + '</dl>' +
-      '<div><span class="lbl">Cấp quyền *</span><div class="grid grid-cols-2 sm:grid-cols-4 gap-2">' + [['Xem', 'Chỉ xem'], ['CanBo', 'Cán bộ'], ['LanhDao', 'Lãnh đạo'], ['Admin', 'Quản trị']].map(function (q) {
+      '<div><label class="lbl" for="dHoTen">Họ và tên</label><input id="dHoTen" name="HoTen" class="inp" maxlength="100" value="' + esc(x.HoTen) + '"><p class="text-xs text-muted mt-1.5">Người gửi tự khai, có thể sửa cho đúng trước khi duyệt.</p></div>' +
+      '<div><span class="lbl">Cấp quyền *</span><div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + [['Xem', 'Chỉ xem'], ['CanBo', 'Cán bộ'], ['ChuCoSo', 'Cộng tác viên'], ['LanhDao', 'Lãnh đạo'], ['Admin', 'Quản trị']].map(function (q) {
         return '<label><input type="radio" name="Quyen" value="' + q[0] + '" class="peer sr-only"' + (q[0] === 'CanBo' ? ' checked' : '') + '><span class="flex h-10 items-center justify-center rounded-xl border border-line text-sm cursor-pointer peer-checked:bg-brand-50 peer-checked:border-brand peer-checked:text-brand-600">' + q[1] + '</span></label>';
-      }).join('') + '</div><p class="text-xs text-muted mt-1.5">Cán bộ: đăng ký, sửa khách và cơ sở · Chỉ xem: không sửa được · Quản trị: toàn quyền, duyệt người khác.</p>' +
+      }).join('') + '</div><p class="text-xs text-muted mt-1.5">Cán bộ: đăng ký, sửa khách và cơ sở · Cộng tác viên: chủ cơ sở tự đăng ký khách, gửi đề xuất cho cán bộ · Chỉ xem: không sửa được · Quản trị: toàn quyền, duyệt người khác.</p>' +
       '<label id="xnAdmin" class="hidden mt-2 flex gap-2 items-start text-sm bg-rose text-rose-ink rounded-xl px-3 py-2"><input type="checkbox" name="xacNhanAdmin" class="mt-0.5"> Tôi xác nhận cấp toàn quyền quản trị cho tài khoản này.</label></div>' +
-      '<div><label class="lbl" for="gopVao">Gắn vào dòng CSKV có sẵn</label><select id="gopVao" name="gopVao" class="inp"><option value="">— Không gắn, tạo cán bộ mới —</option>' +
+      '<div id="vungCT" class="hidden flex flex-col gap-4"><div><label class="lbl" for="dPT">Cán bộ phụ trách</label><select id="dPT" name="NguoiPhuTrach" class="inp"><option value="">— Chưa gán —</option>' +
+      canBoPT.map(function (c) { return '<option value="' + esc(c.Email) + '">' + esc(c.HoTen + (c.CSKV ? ' · CSKV ' + c.CSKV : '') + ' · ' + c.Email) + '</option>'; }).join('') +
+      '</select><p class="text-xs text-muted mt-1.5">Cán bộ này sẽ duyệt đề xuất của cộng tác viên. Có thể để trống và gán sau.</p></div>' +
+      '<div><span class="lbl">Cơ sở được quản lý <span class="text-muted font-normal">(không bắt buộc)</span> <span id="dDem" class="text-muted font-normal"></span></span><label class="relative block mb-2"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted">' + ic('search') + '</span><input id="dTim" type="search" class="inp h-10 pl-9 text-sm" placeholder="Tìm cơ sở…" autocomplete="off"></label>' +
+      '<div id="dCs" class="max-h-60 overflow-y-auto card divide-y divide-line">' + dsCs.map(function (c) {
+        return '<label class="flex items-start gap-3 px-3 py-2.5 cursor-pointer hover:bg-canvas/60" data-ten="' + esc(boDau([c.TenCoSo, c.DiaChi, c.MaCoSo].join(' '))) + '"><input type="checkbox" class="mt-0.5 size-5 shrink-0 accent-[#6C7BF2]" value="' + esc(c.MaCoSo) + '"><span class="min-w-0"><b class="block text-sm font-medium truncate">' + esc(c.TenCoSo) + '</b><span class="block text-xs text-muted truncate">' + esc(c.MaCoSo + ' · ' + c.DiaChi) + '</span></span></label>';
+      }).join('') + '</div></div></div>' +
+      '<div id="vungGop"><label class="lbl" for="gopVao">Gắn vào dòng CSKV có sẵn</label><select id="gopVao" name="gopVao" class="inp"><option value="">— Không gắn, tạo cán bộ mới —</option>' +
       trongCho.map(function (c) { return '<option value="' + esc(c.MaCanBo) + '"' + (khop && khop.MaCanBo === c.MaCanBo ? ' selected' : '') + '>' + esc(c.MaCanBo + ' · CSKV ' + (c.CSKV || '?')) + '</option>'; }).join('') +
       '</select><p class="text-xs text-muted mt-1.5">' + (khop ? 'Đã tự chọn dòng có tên CSKV trùng với tên người gửi khai. Kiểm tra lại cho đúng người.' : 'Chọn nếu người này là một CSKV đã có sẵn trong danh sách (chưa có email).') + '</p></div>' +
       '<p id="fLoi" class="hidden text-sm bg-rose text-rose-ink rounded-xl px-3 py-2"></p></form>' +
       '<footer class="flex gap-2 px-5 sm:px-6 py-4 border-t border-line"><button class="btn-danger" data-tuchoi-cb="' + esc(x.MaCanBo) + '">Từ chối</button><span class="flex-1"></span><button id="fLuu" form="fDuyet" class="btn-primary min-w-28">' + ic('check') + 'Duyệt</button></footer>');
     var f = $('#fDuyet');
-    $$('[name=Quyen]', f).forEach(function (r) { r.addEventListener('change', function () { $('#xnAdmin').classList.toggle('hidden', f.Quyen.value !== 'Admin'); }); });
+    var doiQuyen = function () {
+      var q = f.Quyen.value;
+      $('#xnAdmin').classList.toggle('hidden', q !== 'Admin');
+      $('#vungCT').classList.toggle('hidden', q !== 'ChuCoSo');
+      $('#vungGop').classList.toggle('hidden', q === 'ChuCoSo');
+    };
+    $$('[name=Quyen]', f).forEach(function (r) { r.addEventListener('change', doiQuyen); });
+    doiQuyen();
+    var demCs = function () { $('#dDem').textContent = '(đã chọn ' + $$('#dCs input:checked').length + ')'; };
+    demCs(); $('#dCs').addEventListener('change', demCs);
+    $('#dTim').addEventListener('input', debounce(function (e) { var q = boDau(e.target.value).trim(); $$('#dCs [data-ten]').forEach(function (l) { l.hidden = !!q && l.dataset.ten.indexOf(q) < 0; }); }, 120));
     f.addEventListener('submit', function (e) {
       e.preventDefault();
-      var d = { ma: x.MaCanBo, Quyen: f.Quyen.value, gopVao: f.gopVao.value, xacNhanAdmin: f.xacNhanAdmin.checked };
+      var d = { ma: x.MaCanBo, Quyen: f.Quyen.value, HoTen: f.HoTen.value.trim(), gopVao: f.gopVao.value, xacNhanAdmin: f.xacNhanAdmin.checked };
+      if (!d.HoTen) { $('#fLoi').textContent = 'Họ tên không được để trống.'; $('#fLoi').classList.remove('hidden'); return; }
+      if (d.Quyen === 'ChuCoSo') { d.gopVao = ''; d.NguoiPhuTrach = f.NguoiPhuTrach.value; d.CoSoQuanLy = $$('#dCs input:checked').map(function (i) { return i.value; }); }
       if (d.Quyen === 'Admin' && !d.xacNhanAdmin) { $('#fLoi').textContent = 'Cần tích xác nhận khi cấp quyền Quản trị.'; $('#fLoi').classList.remove('hidden'); return; }
       var nut = $('#fLuu'); nut.disabled = true;
       API.goi('duyetCanBo', d).then(function (r) { sauKhiGhi('canbo'); toast('Đã duyệt ' + x.Email + ' → ' + r.MaCanBo); dongNganKeo(); lamMoi(); })
@@ -2959,7 +2983,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.7.3';
+  var PB_GIAO_DIEN = '2.7.4';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
