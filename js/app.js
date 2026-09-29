@@ -33,9 +33,9 @@
   var CHAM_TT = { 'Đang ở': 'bg-mint-ink', 'Sắp hết hạn': 'bg-butter-ink', 'Quá hạn': 'bg-rose-ink', 'Đã rời đi': 'bg-fog-ink' };
   var MAU_LOAI = {
     'Nhà trọ': 'bg-sky text-sky-ink', 'Nhà nghỉ': 'bg-lilac text-lilac-ink', 'Nhà cho thuê': 'bg-peach text-peach-ink',
-    'Khách sạn': 'bg-mint text-mint-ink', 'Khác': 'bg-fog text-fog-ink'
+    'Khách sạn': 'bg-mint text-mint-ink', 'KT2 đến': 'bg-butter text-butter-ink', 'Khác': 'bg-fog text-fog-ink'
   };
-  var THANH_LOAI = { 'Nhà trọ': 'bg-[#8EC5F5]', 'Nhà nghỉ': 'bg-[#B9A6E8]', 'Nhà cho thuê': 'bg-[#F5B98A]', 'Khách sạn': 'bg-[#8FD6B5]', 'Khác': 'bg-[#C5C9D3]' };
+  var THANH_LOAI = { 'Nhà trọ': 'bg-[#8EC5F5]', 'Nhà nghỉ': 'bg-[#B9A6E8]', 'Nhà cho thuê': 'bg-[#F5B98A]', 'Khách sạn': 'bg-[#8FD6B5]', 'KT2 đến': 'bg-[#F2D57E]', 'Khác': 'bg-[#C5C9D3]' };
   var badgeTT = function (tt) { return '<span class="badge ' + (MAU_TT[tt] || 'bg-fog text-fog-ink') + '"><span class="size-1.5 rounded-full ' + (CHAM_TT[tt] || 'bg-fog-ink') + '"></span>' + esc(tt) + '</span>'; };
   var badgeLoai = function (l) { return '<span class="badge ' + (MAU_LOAI[l] || 'bg-fog text-fog-ink') + '">' + esc(l || '—') + '</span>'; };
   function conLaiTxt(r) {
@@ -839,7 +839,7 @@
           '<div id="csMoi" class="hidden mt-2 rounded-xl border border-line bg-canvas/60 p-3 grid gap-2">' +
           '<b class="text-sm">Thêm cơ sở mới</b>' +
           '<input id="csMoiTen" class="inp" maxlength="150" placeholder="Tên cơ sở (vd: Nhà trọ Hoa Mai)">' +
-          '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">' + ['Nhà trọ', 'Nhà nghỉ', 'Khách sạn', 'Nhà cho thuê'].map(function (l) {
+          '<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">' + ['Nhà trọ', 'Nhà nghỉ', 'Khách sạn', 'Nhà cho thuê', 'KT2 đến'].map(function (l) {
             return '<label><input type="radio" name="csMoiLoai" value="' + l + '" class="peer sr-only"><span class="flex h-9 items-center justify-center rounded-xl border border-line bg-white text-[13px] cursor-pointer peer-checked:bg-brand-50 peer-checked:border-brand peer-checked:text-brand-600">' + l + '</span></label>';
           }).join('') + '</div>' +
           '<input id="csMoiDC" class="inp" maxlength="300" placeholder="Địa chỉ cụ thể: số nhà, ngõ/ngách, đường">' +
@@ -1139,7 +1139,7 @@
           '<div id="csMoi" class="hidden mt-2 rounded-xl border border-line bg-canvas/60 p-3 grid gap-2">' +
           '<b class="text-sm">Thêm cơ sở mới</b>' +
           '<input id="csMoiTen" class="inp" maxlength="150" placeholder="Tên cơ sở (vd: Nhà trọ Hoa Mai)">' +
-          '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">' + ['Nhà trọ', 'Nhà nghỉ', 'Khách sạn', 'Nhà cho thuê'].map(function (l) {
+          '<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">' + ['Nhà trọ', 'Nhà nghỉ', 'Khách sạn', 'Nhà cho thuê', 'KT2 đến'].map(function (l) {
             return '<label><input type="radio" name="csMoiLoai" value="' + l + '" class="peer sr-only"><span class="flex h-9 items-center justify-center rounded-xl border border-line bg-white text-[13px] cursor-pointer peer-checked:bg-brand-50 peer-checked:border-brand peer-checked:text-brand-600">' + l + '</span></label>';
           }).join('') + '</div>' +
           '<input id="csMoiDC" class="inp" maxlength="300" placeholder="Địa chỉ cụ thể: số nhà, ngõ/ngách, đường">' +
@@ -2442,7 +2442,7 @@
     moNganKeo(dauNganKeo('Thêm cơ sở mới', 'Cơ sở sẽ được gán cho bạn và thuộc địa bàn của cán bộ phụ trách') +
       '<form id="fCsCc" class="flex-1 overflow-y-auto px-5 sm:px-6 py-5 flex flex-col gap-4" novalidate>' +
       '<div><label class="lbl" for="cccTen">Tên cơ sở *</label><input id="cccTen" class="inp" maxlength="150" placeholder="Ví dụ: Nhà trọ Hoa Mai" autofocus></div>' +
-      '<div><span class="lbl">Loại hình *</span><div class="grid grid-cols-2 gap-2">' + ['Nhà trọ', 'Nhà nghỉ', 'Khách sạn', 'Nhà cho thuê'].map(function (l) {
+      '<div><span class="lbl">Loại hình *</span><div class="grid grid-cols-2 gap-2">' + ['Nhà trọ', 'Nhà nghỉ', 'Khách sạn', 'Nhà cho thuê', 'KT2 đến'].map(function (l) {
         return '<label><input type="radio" name="cccLoai" value="' + l + '" class="peer sr-only"><span class="flex h-10 items-center justify-center rounded-xl border border-line text-sm cursor-pointer peer-checked:bg-brand-50 peer-checked:border-brand peer-checked:text-brand-600">' + l + '</span></label>';
       }).join('') + '</div></div>' +
       '<div><label class="lbl" for="cccDC">Địa chỉ cụ thể *</label><input id="cccDC" class="inp" maxlength="300" placeholder="Số nhà, ngõ/ngách, đường"></div>' +
@@ -2983,7 +2983,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.7.4';
+  var PB_GIAO_DIEN = '2.7.5';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
