@@ -1,7 +1,7 @@
 {
-  "name": "Quản lý Tạm trú",
-  "short_name": "Tạm trú",
-  "description": "Hệ thống quản lý tạm trú tại cơ sở lưu trú",
+  "name": "Ứng dụng khai báo cư trú",
+  "short_name": "Khai báo cư trú",
+  "description": "Ứng dụng khai báo cư trú tại cơ sở lưu trú",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
