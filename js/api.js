@@ -36,6 +36,7 @@
       hienTai.phien = phien; hienTai.hetPhien = hetPhien;
       try { sessionStorage.setItem(KHOA, JSON.stringify(hienTai)); } catch (e) {}
     },
+    nhatKy: [],          // các lần gọi gần đây: { hd, tong, may, luc }
     khiThuLai: null,     // app.js gán: báo người dùng đang thử lại khi mạng chập chờn
     datToken: function (jwt) {
       var c = giaiMa(jwt);
@@ -66,6 +67,7 @@
         if (API.khiHetPhien) API.khiHetPhien();
         return Promise.reject(Object.assign(new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'), { code: 'TOKEN' }));
       }
+      var tBatDau = Date.now();
       var ctl = window.AbortController ? new AbortController() : null;
       var hg = ctl && setTimeout(function () { ctl.abort(); }, HET_GIO);
       // Mỗi lần gọi có một mã yêu cầu; gửi lại (khi mạng lỗi) dùng lại mã này nên máy chủ không ghi trùng
@@ -102,6 +104,9 @@
         throw new Error(e && e.name === 'AbortError' ? 'Máy chủ phản hồi quá lâu, thử lại sau.' : 'Không kết nối được máy chủ. Kiểm tra mạng rồi bấm lại.');
       }).then(function (r) {
         if (hg) clearTimeout(hg);
+        // Ghi nhận tốc độ để chẩn đoán: tổng thời gian (trình duyệt) và phần xử lý ở máy chủ
+        API.nhatKy.push({ hd: action, tong: Date.now() - tBatDau, may: r && r.ms, luc: Date.now() });
+        if (API.nhatKy.length > 40) API.nhatKy.shift();
         if (!r.ok) {
           if (r.code === 'TOKEN' || r.code === 'CHUA_DANG_NHAP') { API.xoaToken(); if (API.khiHetPhien) API.khiHetPhien(); }
           throw Object.assign(new Error(r.error), { code: r.code });
