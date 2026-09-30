@@ -151,6 +151,8 @@
         '<span class="min-w-0 flex-1"><b class="block text-sm font-medium">' + ten + '</b><span class="block text-xs text-muted">' + moTa + '</span></span>' + (phu || '') + ic('chev', 'size-4 text-muted shrink-0') + '</a>';
     };
     var nhom = function (tieuDe, ds) { ds = ds.filter(Boolean); return ds.length ? '<h2 class="text-xs font-semibold uppercase tracking-wider text-muted px-1 mt-5 mb-2">' + tieuDe + '</h2><div class="card divide-y divide-line overflow-hidden">' + ds.join('') + '</div>' : ''; };
+    var nk = (API.nhatKy || []).slice(-12).reverse();
+    var chanDoan = nk.length ? '<details class="card px-4 py-3 mt-5"><summary class="text-sm font-medium cursor-pointer">Tốc độ các lần tải gần đây</summary><p class="text-xs text-muted mt-2 mb-1">“Tổng” là thời gian chờ thực tế; “Máy chủ” là phần xử lý trong Apps Script. Hiệu số là đường truyền + khởi động nguội (thường khoảng 1–2 giây mỗi lần gọi).</p><table class="w-full text-xs"><thead><tr class="text-left text-muted"><th class="py-1">Việc</th><th class="py-1 text-right">Tổng</th><th class="py-1 text-right">Máy chủ</th></tr></thead><tbody>' + nk.map(function (x) { return '<tr class="border-t border-line"><td class="py-1">' + esc(x.hd) + '</td><td class="py-1 text-right tabular-nums">' + (x.tong / 1000).toFixed(1) + ' s</td><td class="py-1 text-right tabular-nums">' + (x.may != null ? (x.may / 1000).toFixed(1) + ' s' : '—') + '</td></tr>'; }).join('') + '</tbody></table></details>' : '';
     $('#view').innerHTML = dauTrang('Tài khoản', '') +
       '<div class="card p-4 flex items-center gap-4"><span class="grid place-items-center size-14 shrink-0 rounded-full bg-peach text-peach-ink text-xl font-semibold">' + esc(chu) + '</span>' +
       '<span class="min-w-0"><b class="block truncate">' + esc(u.HoTen || '(chưa có họ tên)') + '</b><span class="block text-sm text-muted truncate">' + esc(u.Email) + '</span>' +
@@ -169,6 +171,7 @@
         o('huongdan.html', 'help', 'Hướng dẫn sử dụng', 'Cách dùng, cài ứng dụng lên điện thoại (mở tab mới)', '', true),
         o('privacy.html', 'idcard', 'Chính sách quyền riêng tư', 'Dữ liệu được lưu và bảo vệ thế nào (mở tab mới)', '', true)
       ]) +
+      chanDoan +
       (API.cheDo === 'may-chu' ? '<button type="button" data-dang-xuat class="btn-danger w-full h-12 mt-6">' + ic('out') + 'Đăng xuất</button>' : '') +
       '<p class="text-center text-xs text-muted mt-4">Phiên bản giao diện ' + PB_GIAO_DIEN + '</p>';
   }
@@ -2690,7 +2693,6 @@
       '<div class="flex gap-2 items-start rounded-2xl bg-sky text-sky-ink px-4 py-3 text-sm mb-3">' + ic('idcard', 'size-4 mt-0.5 shrink-0') + '<span>Cộng tác viên đăng nhập bằng Gmail bạn nhập, chỉ thấy <b>thông tin cơ bản</b> của khách tại cơ sở được gán (không thấy tiền án, kết quả test, ghi chú nội bộ), tự đăng ký khách; sửa/xoá/rời đi phải gửi đề xuất cho cán bộ duyệt.</span></div><div id="ccsList">' + khungCho(3) + '</div>';
     // Danh sách cộng tác viên và danh sách cán bộ tải SONG SONG (dùng bộ đệm nếu có) — không chờ nối đuôi nhau
     var dsCBs = layDem('dsCanBo') || [];
-    if (DEM.dsCanBo) DEM.dsCanBo.t = 0;   // hiện ngay bản đã có rồi tự làm mới ngầm (danh sách cán bộ có thể vừa đổi)
     if (laAdmin()) docNhanh('dsCanBo', 'dsCanBo', {}).then(function (x) {
       dsCBs = x; var s = $('#ccsGanPT'); if (s) { var cu = s.value; s.innerHTML = optCanBo(x, cu); s.value = cu; }
     });
@@ -2709,7 +2711,6 @@
   function formChuCoSo(x) {
     var moi = !x;
     var dsCBs = layDem('dsCanBo') || [];
-    if (DEM.dsCanBo) DEM.dsCanBo.t = 0;
     if (laAdmin()) docNhanh('dsCanBo', 'dsCanBo', {}).then(function (d) { dsCBs = d; var s = $('#ccsPT'); if (s) { var cu = s.value; s.innerHTML = optCanBo(d, cu || (x ? x.NguoiPhuTrach : '')); s.value = cu || (x ? x.NguoiPhuTrach : ''); } });
     napCoSo().then(function (cs) {
       var chon = {}; (x ? x.coSo : []).forEach(function (c) { chon[c.MaCoSo] = 1; });
@@ -3059,9 +3060,15 @@
       // Tải ngầm dữ liệu các trang còn lại để lần đầu mở cũng hiện ngay
       setTimeout(function () {
         if (laChuCoSo()) return;   // cộng tác viên không dùng lịch sử/báo cáo
-        var viec = [['dsLichSu', 'dsLichSu', { gioiHan: 200 }], ['bc:' + homNay().slice(0, 7), 'baoCaoThang', { thang: homNay().slice(0, 7) }]];
-        if (laAdmin()) viec.push(['dsCanBo', 'dsCanBo', {}], ['chinhSach', 'chinhSachDuLieu', {}], ['dsSaoLuu', 'dsSaoLuu', {}]);
-        viec.forEach(function (v) { if (!DEM[v[0]]) API.goi(v[1], v[2]).then(function (d) { if (!DEM[v[0]]) datDem(v[0], d); }).catch(function () {}); });
+        // Việc nhẹ, hay mở (Cộng tác viên, Đề xuất, Cán bộ) tải trước; việc nặng (lịch sử, báo cáo) tải sau; chạy TUẦN TỰ để không chặn các thao tác của người dùng
+        var viec = [];
+        if (duocGhi()) viec.push(['dsChuCoSo', 'dsChuCoSo', {}], ['dsDeXuat', 'dsDeXuat', {}]);
+        if (laAdmin()) viec.push(['dsCanBo', 'dsCanBo', {}]);
+        viec.push(['dsLichSu', 'dsLichSu', { gioiHan: 200 }], ['bc:' + homNay().slice(0, 7), 'baoCaoThang', { thang: homNay().slice(0, 7) }]);
+        if (laAdmin()) viec.push(['chinhSach', 'chinhSachDuLieu', {}], ['dsSaoLuu', 'dsSaoLuu', {}]);
+        viec.reduce(function (chuoi, v) {
+          return chuoi.then(function () { if (!DEM[v[0]]) return API.goi(v[1], v[2]).then(function (d) { if (!DEM[v[0]]) datDem(v[0], d); }).catch(function () {}); });
+        }, Promise.resolve());
       }, 1200);
     }).catch(function (e) {
       if (e.code === 'CHUA_CAP_QUYEN') return manXinQuyen();
@@ -3079,7 +3086,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.12.1';
+  var PB_GIAO_DIEN = '2.12.2';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
