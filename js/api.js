@@ -36,6 +36,7 @@
       hienTai.phien = phien; hienTai.hetPhien = hetPhien;
       try { sessionStorage.setItem(KHOA, JSON.stringify(hienTai)); } catch (e) {}
     },
+    khiCham: null,       // app.js gán: báo người dùng khi một lần tải quá 4 giây
     nhatKy: [],          // các lần gọi gần đây: { hd, tong, may, luc }
     khiThuLai: null,     // app.js gán: báo người dùng đang thử lại khi mạng chập chờn
     datToken: function (jwt) {
@@ -107,6 +108,7 @@
         // Ghi nhận tốc độ để chẩn đoán: tổng thời gian (trình duyệt) và phần xử lý ở máy chủ
         API.nhatKy.push({ hd: action, tong: Date.now() - tBatDau, may: r && r.ms, luc: Date.now() });
         if (API.nhatKy.length > 40) API.nhatKy.shift();
+        if (Date.now() - tBatDau > 4000 && API.khiCham) API.khiCham(action, Date.now() - tBatDau, r && r.ms);
         if (!r.ok) {
           if (r.code === 'TOKEN' || r.code === 'CHUA_DANG_NHAP') { API.xoaToken(); if (API.khiHetPhien) API.khiHetPhien(); }
           throw Object.assign(new Error(r.error), { code: r.code });
