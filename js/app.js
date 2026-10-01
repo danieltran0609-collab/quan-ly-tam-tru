@@ -1261,7 +1261,11 @@
         '<section><div class="flex items-center gap-2 mb-2"><h3 class="text-xs font-semibold uppercase tracking-wide text-muted">Danh sách người</h3><span id="dsDem" class="badge bg-brand-50 text-brand-600"></span></div>' +
         '<div class="grid grid-cols-2 sm:flex gap-2 mb-3">' +
         '<button type="button" id="dsQR" class="btn-soft">' + ic('qr', 'size-5') + 'Quét QR CCCD</button>' +
-        '<button type="button" id="dsDanMo" class="btn-soft">' + ic('clip', 'size-5') + 'Dán từ Excel/Zalo</button></div>' +
+        '<button type="button" id="dsDanMo" class="btn-soft">' + ic('clip', 'size-5') + 'Dán từ Excel/Zalo</button>' +
+        '<button type="button" id="dsFile" class="btn-soft">' + ic('plus', 'size-5') + 'Nhập file Excel</button>' +
+        '<button type="button" id="dsMau" class="btn-soft">' + ic('down', 'size-5') + 'Tải mẫu Excel</button>' +
+        '<input type="file" id="dsFileO" accept=".xlsx,.xls,.csv" class="hidden"></div>' +
+        '<p class="text-xs text-muted -mt-1 mb-3">Có danh sách sẵn? Bấm <b>Tải mẫu Excel</b>, điền rồi bấm <b>Nhập file Excel</b>. Tệp chỉ được đọc ngay trên máy này, không gửi lên máy chủ.</p>' +
         '<div id="dsDan" class="hidden mb-3 rounded-xl border border-line bg-canvas/60 p-3">' +
         '<p class="text-xs text-muted mb-2">Mỗi người một dòng. Các cột cách nhau bằng Tab (dán từ Excel), dấu <b>;</b> hoặc <b>|</b>. Tự nhận ra họ tên, số CCCD, ngày sinh, giới tính, nơi thường trú; cũng nhận chuỗi đọc từ mã QR CCCD.</p>' +
         '<textarea id="dsDanO" rows="4" class="inp h-auto py-2 font-mono text-[13px]" placeholder="Nguyễn Văn A&#9;0010xxxxxxxx&#9;01/02/1990&#9;Nam&#9;Hà Nội"></textarea>' +
@@ -1377,6 +1381,26 @@
         });
         $('#dsDanO').value = ''; moDan(false);
         toast('Đã thêm ' + them + ' dòng vào bảng' + (bo ? ', bỏ qua ' + bo + ' dòng không đọc được' : '') + '. Kiểm tra lại trước khi lưu.');
+      });
+      // Nhập từ tệp Excel (mẫu "Mau_khai_bao_danh_sach.xlsx" hoặc bảng có cùng tên cột): đọc ngay trên trình duyệt
+      $('#dsMau').addEventListener('click', function () { taiMauKhaiBao(); });
+      $('#dsFile').addEventListener('click', function () { $('#dsFileO').click(); });
+      $('#dsFileO').addEventListener('change', function () {
+        var file = this.files && this.files[0]; this.value = '';
+        if (!file) return;
+        if (file.size > 3 * 1024 * 1024) { toast('Tệp quá lớn (tối đa 3 MB).', 'loi'); return; }
+        var nut = $('#dsFile'), chu = nut.innerHTML; nut.disabled = true; nut.textContent = 'Đang đọc…';
+        var xong = function () { nut.disabled = false; nut.innerHTML = chu; };
+        Promise.all([napThuVien('XLSX'), file.arrayBuffer()]).then(function (kq) {
+          var r = docExcelDS(kq[0], kq[1]);
+          if (r.loi) { toast(r.loi, 'loi'); return; }
+          var coSan = cacDong().filter(function (d) { return !dongTrong(d); }).length, chua = Math.max(TOI_DA_DS - coSan, 0), them = 0;
+          r.ds.slice(0, chua).forEach(function (x) { if (themDong(x, true)) them++; });
+          var cauChu = 'Đã nạp ' + them + ' người từ “' + file.name + '”.';
+          if (r.ds.length > chua) cauChu += ' Còn ' + (r.ds.length - chua) + ' người chưa nạp (mỗi lần tối đa ' + TOI_DA_DS + '): lưu danh sách này rồi nhập tiếp phần còn lại.';
+          if (r.canh.length) cauChu += ' Lưu ý: ' + r.canh.slice(0, 3).join('; ') + (r.canh.length > 3 ? '; …' : '') + '.';
+          toast(cauChu + ' Kiểm tra lại các dòng tô xanh trước khi lưu.', r.canh.length || r.ds.length > chua ? 'canh' : undefined);
+        }).catch(function (e) { toast('Không đọc được tệp: ' + (e.message || e), 'loi'); }).then(xong, xong);
       });
 
       var dangLuu = false;
@@ -2338,6 +2362,80 @@
     var khoiPhuc = function () { if (document.body.contains(nut)) { nut.disabled = false; nut.innerHTML = chu; } };
     Promise.resolve(thucHien()).then(khoiPhuc, khoiPhuc);
   }
+  /** Tạo tệp mẫu khai báo theo danh sách (cột đã định dạng văn bản để giữ số 0 đầu của CCCD / số điện thoại). */
+  function taiMauKhaiBao() {
+    return napThuVien('XLSX').then(function (X) {
+      var cot = [['STT', 6], ['Họ và tên *', 28], ['Số CCCD / Hộ chiếu *', 22], ['Số điện thoại *', 16], ['Ngày sinh (dd/mm/yyyy)', 18], ['Giới tính (Nam/Nữ/Khác)', 16], ['Quốc tịch (trống = Việt Nam)', 20], ['Phòng (trống = phòng chung)', 18], ['Nơi thường trú', 42]];
+      var sh = {};
+      cot.forEach(function (c, j) { sh[X.utils.encode_cell({ r: 0, c: j })] = { t: 's', v: c[0], s: KIEU_XL.cot }; });
+      for (var r = 1; r <= TOI_DA_DS; r++) cot.forEach(function (c, j) {
+        sh[X.utils.encode_cell({ r: r, c: j })] = j === 0 ? { t: 'n', v: r, s: KIEU_XL.o(true, false) } : { t: 's', v: '', z: '@', s: KIEU_XL.o(false, false) };
+      });
+      sh['!ref'] = 'A1:' + X.utils.encode_cell({ r: TOI_DA_DS, c: cot.length - 1 });
+      sh['!cols'] = cot.map(function (c) { return { wch: c[1] }; });
+      sh['!rows'] = [{ hpt: 36 }];
+      var hd = [
+        ['HƯỚNG DẪN KHAI BÁO THEO DANH SÁCH'],
+        [''],
+        ['Cách dùng', '1. Điền mỗi người một dòng ở sheet “Danh sách” (tối đa ' + TOI_DA_DS + ' người mỗi lần).'],
+        ['', '2. Trong ứng dụng: Khai báo → Khai báo nhiều người → chọn Cơ sở, Ngày đến, Hình thức khai báo.'],
+        ['', '3. Bấm “Nhập file Excel”, chọn tệp này → kiểm tra lại các dòng vừa nạp → bấm “Lưu danh sách”.'],
+        ['Cột bắt buộc', 'Họ và tên; Số CCCD / Hộ chiếu; Số điện thoại. Người dưới 14 tuổi không bắt buộc số điện thoại nhưng phải có ngày sinh.'],
+        ['Số CCCD / Hộ chiếu', 'CCCD 12 chữ số (hoặc CMND 9 số); hộ chiếu 6–15 ký tự gồm chữ và số. Cột đã đặt dạng văn bản nên giữ nguyên số 0 ở đầu.'],
+        ['Ngày sinh', 'Gõ dạng dd/mm/yyyy, ví dụ 15/03/1990. Không bắt buộc (trừ người dưới 14 tuổi không có số điện thoại).'],
+        ['Giới tính', 'Nam, Nữ hoặc Khác (để trống được).'],
+        ['Quốc tịch / Phòng', 'Quốc tịch để trống = Việt Nam. Phòng để trống = dùng ô “Phòng chung” trên ứng dụng.'],
+        ['Không nhập trong tệp', 'Cơ sở, ngày đến, ngày đi dự kiến, hình thức khai báo: chọn trên ứng dụng, áp dụng cho cả danh sách.'],
+        ['Lưu ý', 'Giữ nguyên dòng tiêu đề (dòng 1). Dòng để trống sẽ được bỏ qua. Tệp chỉ được đọc ngay trên máy của bạn, không gửi lên máy chủ; hãy xoá tệp sau khi dùng vì chứa thông tin cá nhân.']
+      ];
+      var hs = X.utils.aoa_to_sheet(hd);
+      hs['A1'].s = KIEU_XL.tieuDe;
+      for (var i = 2; i < hd.length; i++) { hs[X.utils.encode_cell({ r: i, c: 0 })] && (hs[X.utils.encode_cell({ r: i, c: 0 })].s = KIEU_XL.khoa); var o = hs[X.utils.encode_cell({ r: i, c: 1 })]; if (o) o.s = KIEU_XL.o(false, false); }
+      hs['!cols'] = [{ wch: 24 }, { wch: 110 }];
+      var wb = X.utils.book_new();
+      X.utils.book_append_sheet(wb, sh, 'Danh sách');
+      X.utils.book_append_sheet(wb, hs, 'Hướng dẫn');
+      X.writeFile(wb, 'Mau_khai_bao_danh_sach.xlsx');
+      toast('Đã tải tệp mẫu Mau_khai_bao_danh_sach.xlsx');
+    }).catch(function (e) { toast(e.message, 'loi'); });
+  }
+
+  /** Đọc tệp Excel/CSV (ArrayBuffer) thành danh sách người. Trả { ds, canh } hoặc { loi }. */
+  function docExcelDS(X, buf) {
+    var chuan = function (s) { return boDau(String(s == null ? '' : s)).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
+    var CAC_COT = [['HoTen', /^ho (va )?ten/], ['SoCCCD_Pass', /cccd|can cuoc|giay to|ho chieu|cmnd/], ['SoDienThoai', /dien thoai|sdt|so dt/], ['NgaySinh', /sinh/], ['GioiTinh', /gioi tinh|gioi/], ['QuocTich', /quoc tich/], ['SoPhong', /phong/], ['NoiThuongTru', /thuong tru|dia chi|noi o/]];
+    var wb = X.read(buf, { type: 'array' });
+    var ten = wb.SheetNames.filter(function (n) { return /danh sach/.test(chuan(n)); })[0] || wb.SheetNames[0];
+    var dong = X.utils.sheet_to_json(wb.Sheets[ten], { header: 1, raw: true, defval: '' });
+    var dau = -1, anh = {};
+    for (var i = 0; i < Math.min(dong.length, 15) && dau < 0; i++) {
+      var m = {}, dem = 0;
+      dong[i].forEach(function (c, j) { var k = chuan(c); if (!k) return; CAC_COT.some(function (ct) { if (m[ct[0]] === undefined && ct[1].test(k)) { m[ct[0]] = j; dem++; return true; } }); });
+      if (m.HoTen !== undefined && dem >= 2) { dau = i; anh = m; }
+    }
+    if (dau < 0) return { loi: 'Không nhận ra dòng tiêu đề (cần có cột “Họ và tên” và “Số CCCD / Hộ chiếu”). Hãy dùng tệp mẫu.' };
+    var canh = [], ds = [];
+    var chu = function (v) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); };
+    for (var r = dau + 1; r < dong.length; r++) {
+      var h = dong[r], lay = function (k) { return anh[k] === undefined ? '' : h[anh[k]]; };
+      if (!h.some(function (c) { return chu(c) && !/^\d{1,3}$/.test(chu(c)); })) continue;   // dòng trống (chỉ có STT)
+      if (/^\(?v[ií] d[uụ]/i.test(chu(h.filter(function (c) { return chu(c); })[0]))) continue;   // dòng ví dụ
+      var x = { HoTen: chu(lay('HoTen')) }, so = lay('SoCCCD_Pass'), sd = lay('SoDienThoai'), ns = lay('NgaySinh'), gt = chuan(lay('GioiTinh')), stt = r + 1;
+      if (typeof so === 'number') { so = String(Math.round(so)); if (so.length === 11) so = '0' + so; canh.push('dòng ' + stt + ': số CCCD ở dạng số nên có thể mất số 0 đầu, hãy kiểm tra'); }
+      x.SoCCCD_Pass = chu(so).replace(/\s+/g, '').toUpperCase();
+      if (typeof sd === 'number') { sd = String(Math.round(sd)); if (sd.length === 9) sd = '0' + sd; }
+      x.SoDienThoai = chu(sd);
+      if (typeof ns === 'number') { var dc = X.SSF.parse_date_code(ns); x.NgaySinh = dc ? isoNgay(new Date(dc.y, dc.m - 1, dc.d)) : ''; }
+      else if (chu(ns)) { x.NgaySinh = /^\d{4}-\d{2}-\d{2}$/.test(chu(ns)) ? chu(ns) : (docGo(chu(ns)) || ''); if (!x.NgaySinh) canh.push('dòng ' + stt + ': ngày sinh “' + chu(ns) + '” chưa đúng dd/mm/yyyy'); }
+      x.GioiTinh = gt === 'nam' ? 'Nam' : (gt === 'nu') ? 'Nữ' : gt === 'khac' ? 'Khác' : '';
+      if (gt && !x.GioiTinh) canh.push('dòng ' + stt + ': giới tính “' + chu(lay('GioiTinh')) + '” không hợp lệ');
+      x.QuocTich = chu(lay('QuocTich')); x.SoPhong = chu(lay('SoPhong')); x.NoiThuongTru = chu(lay('NoiThuongTru'));
+      ds.push(x);
+    }
+    if (!ds.length) return { loi: 'Tệp không có dòng nào có dữ liệu.' };
+    return { ds: ds, canh: canh };
+  }
+
   function xuatExcel(tenFile, bang, thongTin, nhatKy) {
     return napThuVien('XLSX').then(function (X) {
       var wb = X.utils.book_new(), luc = new Date().toLocaleString('vi-VN');
@@ -3178,7 +3276,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.14.0';
+  var PB_GIAO_DIEN = '2.15.0';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
