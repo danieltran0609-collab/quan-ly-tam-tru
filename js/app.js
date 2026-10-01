@@ -849,8 +849,9 @@
     moNganKeo(dauNganKeo('Khai báo cư trú', 'Chọn số người cần khai báo') +
       '<div class="flex-1 overflow-y-auto px-5 sm:px-6 py-5 flex flex-col gap-3">' +
       nut('1', 'plus', 'Khai báo 1 người', 'Nhập đầy đủ thông tin một công dân, có thể quét mã QR trên CCCD') +
-      nut('n', 'users', 'Khai báo nhiều người', 'Nhập nhiều người cùng cơ sở, cùng ngày đến (ví dụ cả phòng, cả đoàn)') + '</div>');
-    $$('#drawer [data-kb]').forEach(function (b) { b.addEventListener('click', function () { return b.dataset.kb === '1' ? formKhach(null, ma || '') : formNhapDS(ma || ''); }); });
+      nut('n', 'users', 'Khai báo nhiều người', 'Nhập nhiều người cùng cơ sở, cùng ngày đến (ví dụ cả phòng, cả đoàn)') +
+      (duocGhi() && !ma ? nut('kt2', 'building', 'Nhập danh sách KT2 đến từ Excel', 'Công dân đang cư trú theo loại hình KT2 đến: nhập cả danh sách bằng tệp Excel (có tệp mẫu)') : '') + '</div>');
+    $$('#drawer [data-kb]').forEach(function (b) { b.addEventListener('click', function () { return b.dataset.kb === '1' ? formKhach(null, ma || '') : b.dataset.kb === 'kt2' ? formNhapKT2() : formNhapDS(ma || ''); }); });
   }
 
   function formKhach(r, maCoSoSan, giu, dx) {
@@ -2397,6 +2398,172 @@
     return goi('dsTamTru', {}).then(function (ds) { datDem('dsTamTru', ds); return lam(ds); });
   }
 
+  // ================= NHẬP DANH SÁCH CÔNG DÂN KT2 ĐẾN TỪ EXCEL (Admin / Cán bộ) =================
+  var TOI_DA_KT2 = 300;
+  /** Tạo tệp mẫu nhập KT2 đến. */
+  function taiMauKT2() {
+    return napThuVien('XLSX').then(function (X) {
+      var cot = [['STT', 6], ['Họ và tên *', 28], ['Số CCCD / Hộ chiếu *', 22], ['Số điện thoại (không bắt buộc)', 18], ['Ngày sinh (dd/mm/yyyy)', 18], ['Giới tính (Nam/Nữ/Khác)', 16], ['Dân tộc (trống = Kinh)', 16],
+        ['Quốc tịch (trống = Việt Nam)', 20], ['Nơi đăng ký thường trú (không bắt buộc)', 36], ['Địa chỉ nơi đang ở (KT2) *', 40], ['Chủ nhà / người cho ở (không bắt buộc)', 28], ['Số phòng', 12],
+        ['Ngày đến (dd/mm/yyyy)', 18], ['Ngày đi dự kiến (dd/mm/yyyy)', 18], ['Tổ dân phố', 12], ['CSKV (chỉ Admin)', 16]];
+      var sh = {};
+      cot.forEach(function (c, j) { sh[X.utils.encode_cell({ r: 0, c: j })] = { t: 's', v: c[0], s: KIEU_XL.cot }; });
+      for (var r = 1; r <= 100; r++) cot.forEach(function (c, j) {
+        sh[X.utils.encode_cell({ r: r, c: j })] = j === 0 ? { t: 'n', v: r, s: KIEU_XL.o(true, false) } : { t: 's', v: '', z: '@', s: KIEU_XL.o(false, false) };
+      });
+      sh['!ref'] = 'A1:' + X.utils.encode_cell({ r: 100, c: cot.length - 1 });
+      sh['!cols'] = cot.map(function (c) { return { wch: c[1] }; });
+      sh['!rows'] = [{ hpt: 48 }];
+      var hd = [['HƯỚNG DẪN NHẬP DANH SÁCH CÔNG DÂN KT2 ĐẾN'], [''],
+        ['Cách dùng', '1. Điền mỗi người một dòng ở sheet “Danh sách” (tối đa ' + TOI_DA_KT2 + ' dòng mỗi lần; có thể chia nhiều tệp).'],
+        ['', '2. Trong ứng dụng: Khai báo → Nhập danh sách KT2 đến từ Excel → chọn tệp → xem kết quả kiểm tra → bấm “Nhập”.'],
+        ['Cột bắt buộc', 'Họ và tên; Số CCCD / Hộ chiếu; Địa chỉ nơi đang ở (KT2). Các cột khác không bắt buộc, kể cả Nơi đăng ký thường trú và Số điện thoại.'],
+        ['Địa chỉ nơi đang ở', 'Mỗi địa chỉ là một cơ sở loại “KT2 đến”. Những người cùng địa chỉ được xếp vào cùng cơ sở; địa chỉ chưa có trong hệ thống sẽ được tạo mới (tên cơ sở = chủ nhà nếu có, không thì lấy địa chỉ).'],
+        ['Ngày đến', 'Để trống thì dùng “Ngày đến mặc định” chọn trên ứng dụng. Gõ dạng dd/mm/yyyy.'],
+        ['Tổ dân phố / CSKV', 'Cán bộ: theo địa bàn của mình (cán bộ phụ trách nhiều tổ thì ghi tổ ở cột này hoặc chọn trên ứng dụng). Admin: gán CSKV và Tổ cho cả tệp trên ứng dụng, hoặc ghi riêng từng dòng ở hai cột này.'],
+        ['Dân tộc / Quốc tịch', 'Dân tộc để trống = Kinh; Quốc tịch để trống = Việt Nam.'],
+        ['Người đã đang cư trú', 'Số giấy tờ đã đang được ghi nhận tạm trú ở nơi khác sẽ được bỏ qua và báo lại để xử lý (xác nhận rời đi nơi cũ trước).'],
+        ['Lưu ý', 'Giữ nguyên dòng tiêu đề. Tệp chỉ được đọc ngay trên máy của bạn rồi gửi nội dung từng dòng lên hệ thống để kiểm tra; hãy xoá tệp sau khi dùng vì chứa thông tin cá nhân.']];
+      var hs = X.utils.aoa_to_sheet(hd);
+      hs['A1'].s = KIEU_XL.tieuDe;
+      for (var i = 2; i < hd.length; i++) { var a = hs[X.utils.encode_cell({ r: i, c: 0 })]; if (a) a.s = KIEU_XL.khoa; var o = hs[X.utils.encode_cell({ r: i, c: 1 })]; if (o) o.s = KIEU_XL.o(false, false); }
+      hs['!cols'] = [{ wch: 26 }, { wch: 120 }];
+      var wb = X.utils.book_new();
+      X.utils.book_append_sheet(wb, sh, 'Danh sách');
+      X.utils.book_append_sheet(wb, hs, 'Hướng dẫn');
+      X.writeFile(wb, 'Mau_nhap_KT2_den.xlsx');
+      toast('Đã tải tệp mẫu Mau_nhap_KT2_den.xlsx');
+    }).catch(function (e) { toast(e.message, 'loi'); });
+  }
+
+  /** Đọc tệp Excel nhập KT2 đến → { ds:[{dong,…}], canh } hoặc { loi }. */
+  function docExcelKT2(X, buf) {
+    var chuan = function (s) { return boDau(String(s == null ? '' : s)).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
+    var CAC_COT = [['HoTen', /^ho (va )?ten/], ['SoCCCD_Pass', /cccd|can cuoc|giay to|ho chieu|cmnd/], ['SoDienThoai', /dien thoai|sdt|so dt/], ['NgaySinh', /ngay sinh|nam sinh/], ['GioiTinh', /gioi tinh|^gioi/],
+      ['DanToc', /dan toc/], ['QuocTich', /quoc tich/], ['NoiThuongTru', /thuong tru/], ['DiaChiCuTru', /noi dang o|noi cu tru|dia chi .*(o|cu tru)|dia chi kt2|noi o\b/], ['ChuNha', /chu nha|chu ho|nguoi cho o/],
+      ['SoPhong', /phong/], ['NgayDen', /ngay den/], ['NgayDiDuKien', /ngay di/], ['ToDanPho', /^to( dan pho| dp)?$|to dan pho/], ['CSKV', /cskv|canh sat/]];
+    var wb = X.read(buf, { type: 'array' });
+    var ten = wb.SheetNames.filter(function (n) { return /danh sach/.test(chuan(n)); })[0] || wb.SheetNames[0];
+    var dong = X.utils.sheet_to_json(wb.Sheets[ten], { header: 1, raw: true, defval: '' });
+    var dau = -1, anh = {};
+    for (var i = 0; i < Math.min(dong.length, 15) && dau < 0; i++) {
+      var m = {}, dem = 0;
+      dong[i].forEach(function (c, j) {
+        var k = chuan(c); if (!k) return;
+        CAC_COT.some(function (ct) { if (m[ct[0]] === undefined && ct[1].test(k)) { m[ct[0]] = j; dem++; return true; } });
+      });
+      if (m.HoTen !== undefined && dem >= 3) { dau = i; anh = m; }
+    }
+    if (dau < 0) return { loi: 'Không nhận ra dòng tiêu đề (cần cột “Họ và tên”, “Số CCCD / Hộ chiếu”, “Địa chỉ nơi đang ở”). Hãy dùng tệp mẫu.' };
+    if (anh.DiaChiCuTru === undefined) return { loi: 'Tệp thiếu cột “Địa chỉ nơi đang ở (KT2)”. Hãy dùng tệp mẫu.' };
+    var canh = [], ds = [];
+    var chu = function (v) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); };
+    var ngay = function (v, stt, ten2) {
+      if (typeof v === 'number') { var dc = X.SSF.parse_date_code(v); return dc ? isoNgay(new Date(dc.y, dc.m - 1, dc.d)) : ''; }
+      var s2 = chu(v); if (!s2) return '';
+      var g = /^\d{4}-\d{2}-\d{2}$/.test(s2) ? s2 : docGo(s2);
+      if (!g) canh.push('dòng ' + stt + ': ' + ten2 + ' “' + s2 + '” chưa đúng dd/mm/yyyy');
+      return g || '';
+    };
+    for (var r = dau + 1; r < dong.length; r++) {
+      var h = dong[r], lay = function (k) { return anh[k] === undefined ? '' : h[anh[k]]; }, stt = r + 1;
+      if (!h.some(function (c) { return chu(c) && !/^\d{1,3}$/.test(chu(c)); })) continue;
+      if (/^\(?v[ií] d[uụ]/i.test(chu(h.filter(function (c) { return chu(c); })[0]))) continue;
+      var x = { dong: stt, HoTen: chu(lay('HoTen')) }, so = lay('SoCCCD_Pass'), sd = lay('SoDienThoai'), gt = chuan(lay('GioiTinh'));
+      if (typeof so === 'number') { so = String(Math.round(so)); if (so.length === 11) so = '0' + so; canh.push('dòng ' + stt + ': số CCCD ở dạng số nên có thể mất số 0 đầu, hãy kiểm tra'); }
+      x.SoCCCD_Pass = chu(so).replace(/\s+/g, '').toUpperCase();
+      if (typeof sd === 'number') { sd = String(Math.round(sd)); if (sd.length === 9) sd = '0' + sd; }
+      x.SoDienThoai = chu(sd);
+      x.NgaySinh = ngay(lay('NgaySinh'), stt, 'ngày sinh'); x.NgayDen = ngay(lay('NgayDen'), stt, 'ngày đến'); x.NgayDiDuKien = ngay(lay('NgayDiDuKien'), stt, 'ngày đi dự kiến');
+      x.GioiTinh = gt === 'nam' ? 'Nam' : gt === 'nu' ? 'Nữ' : gt === 'khac' ? 'Khác' : '';
+      if (gt && !x.GioiTinh) canh.push('dòng ' + stt + ': giới tính “' + chu(lay('GioiTinh')) + '” không hợp lệ');
+      x.DanToc = chu(lay('DanToc')); x.QuocTich = chu(lay('QuocTich')); x.NoiThuongTru = chu(lay('NoiThuongTru')); x.DiaChiCuTru = chu(lay('DiaChiCuTru')); x.ChuNha = chu(lay('ChuNha'));
+      x.SoPhong = chu(lay('SoPhong')); x.ToDanPho = chu(lay('ToDanPho')); x.CSKV = chu(lay('CSKV'));
+      ds.push(x);
+    }
+    if (!ds.length) return { loi: 'Tệp không có dòng nào có dữ liệu.' };
+    return { ds: ds, canh: canh };
+  }
+
+  function formNhapKT2() {
+    var admin = laAdmin();
+    napCoSo().then(function (cs) {
+      var cskvDs = {}, toTheo = {};
+      cs.forEach(function (c) { if (c.CSKV) { cskvDs[c.CSKV] = 1; (toTheo[c.CSKV] = toTheo[c.CSKV] || {})[String(c.ToDanPho || '').trim()] = 1; } });
+      var toCB = String((S.user && S.user.ToPhuTrach) || '').split(';').map(function (x) { return x.trim(); }).filter(String);
+      var datalist = function (id, ds) { return '<datalist id="' + id + '">' + ds.map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>'; };
+      moNganKeo(dauNganKeo('Nhập danh sách KT2 đến', 'Công dân đang cư trú theo loại hình KT2 đến, nhập từ tệp Excel') +
+        '<form id="fKT2" class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 flex flex-col gap-4" novalidate>' +
+        '<div class="flex flex-wrap gap-2"><button type="button" id="ktMau" class="btn-soft">' + ic('down', 'size-5') + 'Tải mẫu Excel</button>' +
+        '<button type="button" id="ktFile" class="btn-primary">' + ic('plus', 'size-5') + 'Chọn tệp Excel</button><input type="file" id="ktFileO" accept=".xlsx,.xls,.csv" class="hidden"></div>' +
+        '<p class="text-xs text-muted -mt-2">Mỗi dòng một người, kèm <b>địa chỉ nơi đang ở</b> (mỗi địa chỉ là một cơ sở KT2 đến; chưa có thì hệ thống tạo mới). <b>Nơi đăng ký thường trú không bắt buộc.</b> Tối đa ' + TOI_DA_KT2 + ' dòng mỗi lần. Tệp chỉ được đọc trên máy này.</p>' +
+        '<fieldset class="grid grid-cols-2 gap-3"><legend class="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Thông tin chung cho cả tệp</legend>' +
+        '<div class="col-span-2 sm:col-span-1"><label class="lbl" for="NgayDen_g">Ngày đến mặc định</label>' + oNgay('NgayDen', homNay(), { nhan: 'Ngày đến' }) + '<p class="text-[11px] text-muted mt-1">Dùng cho dòng không ghi ngày đến.</p></div>' +
+        '<div class="col-span-2 sm:col-span-1"><label class="lbl" for="ktLoai">Hình thức khai báo</label><select id="ktLoai" class="inp">' + (S.dm.LoaiKhaiBao || []).map(function (l) { return '<option' + (l === 'Đăng ký tạm trú' ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join('') + '</select></div>' +
+        (admin ? '<div class="col-span-2 sm:col-span-1"><label class="lbl" for="ktCSKV">Gán CSKV *</label><input id="ktCSKV" class="inp" list="dlKtCskv" autocomplete="off" placeholder="Chọn / gõ tên CSKV">' + datalist('dlKtCskv', Object.keys(cskvDs).sort()) + '</div>' +
+          '<div class="col-span-2 sm:col-span-1"><label class="lbl" for="ktTo">Gán Tổ dân phố</label><input id="ktTo" class="inp" list="dlKtTo" autocomplete="off" placeholder="Theo CSKV đã chọn"><datalist id="dlKtTo"></datalist></div>' +
+          '<p class="col-span-2 text-[11px] text-muted -mt-1">Áp dụng cho các địa chỉ mới; cột “Tổ dân phố / CSKV” trong tệp (nếu có) được ưu tiên.</p>'
+          : '<div class="col-span-2 text-sm rounded-xl bg-canvas px-3 py-2">Địa bàn: <b>' + esc(moTaDiaBanDay(S.phamVi || {})) + '</b>' + (toCB.length > 1 ? '' : '') + '</div>' +
+            (toCB.length > 1 ? '<div class="col-span-2 sm:col-span-1"><label class="lbl" for="ktTo">Tổ dân phố (dòng không ghi tổ)</label><select id="ktTo" class="inp"><option value="">— theo cột Tổ trong tệp —</option>' + toCB.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select></div>' : '')) +
+        '</fieldset><div id="ktKQ"></div></form>' +
+        '<footer class="flex gap-2 px-4 sm:px-6 py-3 border-t border-line"><button data-close class="btn-ghost">Đóng</button><span class="flex-1"></span><button id="ktKiem" type="button" class="btn-ghost hidden">Kiểm tra lại</button><button id="ktGhi" type="button" class="btn-primary min-w-40 hidden">Nhập</button></footer>');
+      $('#drawer').classList.add('drawer-rong');
+      var f = $('#fKT2'), dsDoc = null, dangXuLy = false;
+      if (admin) $('#ktCSKV').addEventListener('input', function () { var l = Object.keys(toTheo[this.value.trim()] || {}).filter(String).sort(function (a, b) { return a - b; }); $('#dlKtTo').innerHTML = l.map(function (x) { return '<option value="' + esc(x) + '">'; }).join(''); });
+      var chung = function () {
+        var c = { NgayDen: f.NgayDen.value, LoaiKhaiBao: $('#ktLoai').value };
+        if (admin) { c.CSKV = $('#ktCSKV').value.trim(); c.ToDanPho = $('#ktTo').value.trim(); } else if ($('#ktTo')) c.ToDanPho = $('#ktTo').value;
+        return c;
+      };
+      var dongLoi = function (arr, k) { return arr.slice(0, 40).map(function (x) { return '<li class="py-1 border-t border-line first:border-0"><b class="font-medium">Dòng ' + x.dong + '</b>' + (x.ten ? ' · ' + esc(x.ten) : '') + ' — <span class="' + k + '">' + esc(x.loi || x.lyDo) + '</span></li>'; }).join('') + (arr.length > 40 ? '<li class="pt-1 text-muted">… và ' + (arr.length - 40) + ' dòng nữa</li>' : ''); };
+      var veKQ = function (kq, daGhi) {
+        var h = '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">' +
+          [[daGhi ? 'Đã nhập' : 'Hợp lệ', daGhi ? kq.daThem : kq.hopLe, 'bg-mint text-mint-ink'], [daGhi ? 'Cơ sở KT2 mới' : 'Cơ sở KT2 mới', kq.coSoMoi, 'bg-sky text-sky-ink'], ['Bỏ qua (đã cư trú / trùng)', kq.boQua.length, 'bg-butter text-butter-ink'], ['Dòng lỗi', kq.loi.length, 'bg-rose text-rose-ink']].map(function (x) {
+            return '<div class="rounded-xl p-3 ' + x[2] + '"><b class="text-xl leading-none">' + soVN(x[1]) + '</b><span class="block text-[11px] mt-1">' + x[0] + '</span></div>'; }).join('') + '</div>' +
+          (daGhi ? '<p class="text-sm bg-mint text-mint-ink rounded-xl px-3 py-2 mt-3">Đã nhập ' + soVN(kq.daThem) + ' người' + (kq.coSoMoi ? ', tạo ' + soVN(kq.coSoMoi) + ' cơ sở KT2 mới' : '') + '. Mở “Công dân cư trú” hoặc “Cơ sở” để xem.</p>' : (kq.coSoCo ? '<p class="text-xs text-muted mt-2">' + soVN(kq.coSoCo) + ' địa chỉ đã có cơ sở KT2 trong hệ thống sẽ được dùng lại.</p>' : '')) +
+          (kq.loi.length ? '<h3 class="text-xs font-semibold uppercase tracking-wide text-rose-ink mt-4 mb-1">Dòng lỗi (không nhập)</h3><ul class="text-sm">' + dongLoi(kq.loi, 'text-rose-ink') + '</ul>' : '') +
+          (kq.boQua.length ? '<h3 class="text-xs font-semibold uppercase tracking-wide text-butter-ink mt-4 mb-1">Bỏ qua</h3><ul class="text-sm">' + dongLoi(kq.boQua, 'text-butter-ink') + '</ul>' : '');
+        $('#ktKQ').innerHTML = h;
+      };
+      var capNhatNut = function (kq) {
+        $('#ktKiem').classList.toggle('hidden', !dsDoc); $('#ktGhi').classList.toggle('hidden', !dsDoc || !kq || !kq.hopLe);
+        if (kq && kq.hopLe) $('#ktGhi').textContent = 'Nhập ' + soVN(kq.hopLe) + ' người';
+      };
+      var guiKiem = function () {
+        if (!dsDoc || dangXuLy) return;
+        var loiNgayForm = kiemNgay(f); if (loiNgayForm) return;
+        if (admin && !chung().CSKV && dsDoc.some(function (x) { return !x.CSKV; })) { $('#ktKQ').innerHTML = '<p class="text-sm bg-butter text-butter-ink rounded-xl px-3 py-2">Chọn CSKV để gán cho các địa chỉ mới (hoặc ghi cột CSKV trong tệp), rồi bấm “Kiểm tra lại”.</p>'; capNhatNut(null); return; }
+        dangXuLy = true; $('#ktKQ').innerHTML = '<p class="text-sm text-muted">Đang kiểm tra…</p>';
+        API.goi('nhapKT2', { chung: chung(), ds: dsDoc }).then(function (kq) { veKQ(kq, false); capNhatNut(kq); }).catch(function (e) { $('#ktKQ').innerHTML = '<p class="text-sm bg-rose text-rose-ink rounded-xl px-3 py-2">' + esc(e.message) + '</p>'; capNhatNut(null); }).then(function () { dangXuLy = false; });
+      };
+      $('#ktMau').addEventListener('click', function () { taiMauKT2(); });
+      $('#ktFile').addEventListener('click', function () { $('#ktFileO').click(); });
+      $('#ktFileO').addEventListener('change', function () {
+        var file = this.files && this.files[0]; this.value = ''; if (!file) return;
+        if (file.size > 3 * 1024 * 1024) { toast('Tệp quá lớn (tối đa 3 MB).', 'loi'); return; }
+        $('#ktKQ').innerHTML = '<p class="text-sm text-muted">Đang đọc tệp…</p>';
+        Promise.all([napThuVien('XLSX'), file.arrayBuffer()]).then(function (kq) {
+          var r = docExcelKT2(kq[0], kq[1]);
+          if (r.loi) { dsDoc = null; $('#ktKQ').innerHTML = '<p class="text-sm bg-rose text-rose-ink rounded-xl px-3 py-2">' + esc(r.loi) + '</p>'; capNhatNut(null); return; }
+          if (r.ds.length > TOI_DA_KT2) { dsDoc = null; $('#ktKQ').innerHTML = '<p class="text-sm bg-rose text-rose-ink rounded-xl px-3 py-2">Tệp có ' + soVN(r.ds.length) + ' dòng, vượt giới hạn ' + TOI_DA_KT2 + ' dòng mỗi lần. Hãy tách thành nhiều tệp.</p>'; capNhatNut(null); return; }
+          dsDoc = r.ds;
+          if (r.canh.length) toast('Lưu ý: ' + r.canh.slice(0, 3).join('; ') + (r.canh.length > 3 ? '; …' : ''), 'canh');
+          guiKiem();
+        }).catch(function (e) { $('#ktKQ').innerHTML = '<p class="text-sm bg-rose text-rose-ink rounded-xl px-3 py-2">Không đọc được tệp: ' + esc(e.message || e) + '</p>'; });
+      });
+      $('#ktKiem').addEventListener('click', guiKiem);
+      $('#ktGhi').addEventListener('click', function () {
+        if (!dsDoc || dangXuLy) return;
+        dangXuLy = true; var nut = $('#ktGhi'), chuNut = nut.textContent; nut.disabled = true; nut.textContent = 'Đang nhập…'; $('#ktKiem').disabled = true;
+        API.goi('nhapKT2', { chung: chung(), ds: dsDoc, xacNhan: true }).then(function (kq) {
+          delete DEM.dsCoSo; sauKhiGhi('khach'); sauKhiGhi('coso'); delete DEM.dsTamTru;
+          dsDoc = null; veKQ(kq, true); $('#ktGhi').classList.add('hidden'); $('#ktKiem').classList.add('hidden');
+          toast('Đã nhập ' + kq.daThem + ' người');
+        }).catch(function (e) { toast(e.message, 'loi'); nut.disabled = false; nut.textContent = chuNut; $('#ktKiem').disabled = false; }).then(function () { dangXuLy = false; });
+      });
+    });
+  }
+
   /** Tạo tệp mẫu khai báo theo danh sách (cột đã định dạng văn bản để giữ số 0 đầu của CCCD / số điện thoại). */
   function taiMauKhaiBao() {
     return napThuVien('XLSX').then(function (X) {
@@ -3312,7 +3479,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.18.0';
+  var PB_GIAO_DIEN = '2.19.0';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
