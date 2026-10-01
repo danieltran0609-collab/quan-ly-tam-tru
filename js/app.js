@@ -850,7 +850,7 @@
       '<div class="flex-1 overflow-y-auto px-5 sm:px-6 py-5 flex flex-col gap-3">' +
       nut('1', 'plus', 'Khai báo 1 người', 'Nhập đầy đủ thông tin một công dân, có thể quét mã QR trên CCCD') +
       nut('n', 'users', 'Khai báo nhiều người', 'Nhập nhiều người cùng cơ sở, cùng ngày đến (ví dụ cả phòng, cả đoàn)') +
-      (duocGhi() && !ma ? nut('kt2', 'building', 'Nhập danh sách KT2 đến từ Excel', 'Công dân đang cư trú theo loại hình KT2 đến: nhập cả danh sách bằng tệp Excel (có tệp mẫu)') : '') + '</div>');
+      (duocGhi() ? nut('kt2', 'building', 'Nhập danh sách KT2 đến từ Excel', 'Công dân đang cư trú theo loại hình KT2 đến: nhập cả danh sách bằng tệp Excel (có tệp mẫu)') : '') + '</div>');
     $$('#drawer [data-kb]').forEach(function (b) { b.addEventListener('click', function () { return b.dataset.kb === '1' ? formKhach(null, ma || '') : b.dataset.kb === 'kt2' ? formNhapKT2() : formNhapDS(ma || ''); }); });
   }
 
@@ -3479,7 +3479,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.19.0';
+  var PB_GIAO_DIEN = '2.19.1';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
