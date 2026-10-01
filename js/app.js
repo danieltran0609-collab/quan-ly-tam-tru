@@ -509,7 +509,10 @@
           var n = t.coSo.theoLoaiHinh[l], ng = (t.coSo.nguoiTheoLoaiHinh || {})[l] || 0;
           return '<a href="#/co-so" data-loc-loai="' + esc(l) + '" class="block py-1.5 group"><div class="flex flex-wrap justify-between items-baseline gap-x-2 text-[13px] mb-1"><b class="font-medium group-hover:text-brand-600">' + esc(l) + '</b><span><b class="font-semibold">' + soVN(n) + '</b> cơ sở = <b class="font-semibold">' + soVN(ng) + '</b> người đang cư trú</span></div>' +
             '<div class="h-2 rounded-full bg-canvas overflow-hidden"><div class="h-full rounded-full ' + (THANH_LOAI[l] || 'bg-[#C5C9D3]') + '" style="width:' + Math.max(4, n / maxL * 100) + '%"></div></div></a>';
-        }).join('') + '</div></section>';
+        }).join('') +
+        // KT2 đến: thống kê theo HỘ (mỗi địa chỉ nơi ở = 1 hộ) và số người đang cư trú trong các hộ đó
+        (t.coSo.kt2 && (t.coSo.kt2.ho || t.coSo.kt2.nguoi) ? '<a href="#/co-so" data-loc-loai="KT2 đến" class="block py-1.5 group"><div class="flex flex-wrap justify-between items-baseline gap-x-2 text-[13px] mb-1"><b class="font-medium group-hover:text-brand-600">KT2 đến</b><span><b class="font-semibold">' + soVN(t.coSo.kt2.ho) + '</b> hộ = <b class="font-semibold">' + soVN(t.coSo.kt2.nguoi) + '</b> người đang cư trú</span></div>' +
+          '<div class="h-2 rounded-full bg-canvas overflow-hidden"><div class="h-full rounded-full ' + THANH_LOAI['KT2 đến'] + '" style="width:' + Math.min(100, Math.max(4, t.coSo.kt2.ho / maxL * 100)) + '%"></div></div></a>' : '') + '</div></section>';
       var html = dauTrang('Tổng quan', moTa, ghi && (pv.toanPhuong || pv.soCoSo) ? '<button class="btn-primary" data-them-khach>' + ic('plus') + 'Khai báo</button>' : '',
         nutCongCu('data-xuat-tq', 'down', 'Xuất Excel')) +
         '<p class="sm:hidden -mt-3 mb-3 text-xs text-muted">' + moTa + '</p>' +
@@ -3479,7 +3482,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.19.1';
+  var PB_GIAO_DIEN = '2.20.0';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
