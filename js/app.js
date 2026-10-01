@@ -1019,6 +1019,35 @@
         var nut = themTiep ? $('#fLuuThem') : $('#fLuu'), chu = nut.innerHTML;
         $('#fLuu').disabled = true; if ($('#fLuuThem')) $('#fLuuThem').disabled = true; nut.textContent = 'Đang lưu…';
         if (!moi) { d.id = r.ID; d._phienBan = r.NgayCapNhat; }
+        if (moi && !dx && !laThu) {
+          // Lạc quan: đóng form / chuyển sang người kế tiếp ngay, hiện dòng tạm trong danh sách; máy chủ lưu ngầm.
+          // Lỗi (trùng giấy tờ, thiếu SĐT…) -> bỏ dòng tạm, mở lại form đúng dữ liệu đã nhập kèm lời báo lỗi.
+          var tam = null;
+          if (!laChuCoSo() && layDem('dsTamTru')) {
+            var csT = (layDem('dsCoSo') || []).filter(function (x) { return x.MaCoSo === d.MaCoSo; })[0] || {};
+            tam = Object.assign({ ID: 'TAM-' + Date.now(), TenCoSo: csT.TenCoSo || '', DiaChiCoSo: csT.DiaChi || '', CSKV: csT.CSKV || '' }, d, { TrangThai: tinhTrangThai(d.NgayDiDuKien, d.NgayDiThucTe) });
+            vaKhach(tam);
+          }
+          var boTam = function () { if (tam) vaKhach(null, tam.ID); };
+          toast('Đang lưu ' + d.HoTen + '…');
+          if (themTiep) {
+            formKhach(null, null, { du: { MaCoSo: d.MaCoSo, SoPhong: d.SoPhong, NgayDen: d.NgayDen, NgayDiDuKien: d.NgayDiDuKien, LoaiKhaiBao: d.LoaiKhaiBao, QuocTich: d.QuocTich || 'Việt Nam' }, dem: (giu ? giu.dem : 0) + 1 });
+            lamMoiNen();
+          } else { dongNganKeo(); lamMoi(); }
+          API.goi('themTamTru', d).then(function (kq) {
+            boTam();
+            if (kq && kq.choDuyet) { delete DEM.dsDeXuat; sauKhiGhi('khach'); toast('Đã gửi khai báo ' + d.HoTen + ' cho cán bộ phụ trách duyệt'); }
+            else { vaKhach(kq); sauKhiGhi('khach'); toast('Đã đăng ký ' + kq.HoTen); }
+            if (!$('#fKhach')) lamMoiNen();
+          }, function (err) {
+            boTam();
+            toast('Không lưu được ' + d.HoTen + ': ' + (err.message || err), 'loi');
+            if ($('#fKhach')) { if (!$('#drawerWrap').hidden) lamMoiNen(); return; }   // đang nhập người khác: chỉ báo lỗi (dữ liệu người này nằm trong thông báo)
+            formKhach(null, null, { du: d, dem: 0 }); lamMoiNen();
+            setTimeout(function () { var p = $('#fLoi'); if (p) { p.textContent = err.message || String(err); p.classList.remove('hidden'); } }, 600);
+          });
+          return;
+        }
         API.goi(dx ? 'duyetDeXuat' : moi ? 'themTamTru' : 'suaTamTru', dx ? { ma: dx.MaDeXuat, data: d } : d).then(function (kq) {
           if (dx) { delete DEM.dsDeXuatCB; sauKhiGhi('khach'); toast('Đã duyệt và thêm ' + d.HoTen + ' vào danh sách công dân'); dongNganKeo(); lamMoi(); return; }
           if (kq && kq.choDuyet) { delete DEM.dsDeXuat; sauKhiGhi('khach'); toast('Đã gửi khai báo ' + d.HoTen + ' cho cán bộ phụ trách duyệt'); }
@@ -1103,11 +1132,21 @@
         if (!kq) return;
         if (!kq.v) return toast('Ngày đi dự kiến chưa đúng (dd/mm/yyyy).', 'loi');
         var ds = caPhong || kq.chon.indexOf('ca-phong') >= 0 ? [r].concat(ban) : [r];
-        goi('giaHan', { ids: ds.map(function (x) { return x.ID; }), ngay: kq.v }).then(function (kqs) {
+        if (r.DuLieuThu === true) {
+          goi('giaHan', { ids: ds.map(function (x) { return x.ID; }), ngay: kq.v }).then(function (kqs) {
+            toast((kqs.length > 1 ? kqs.length + ' người phòng ' + r.SoPhong : kqs[0].HoTen) + ' được gia hạn đến ' + vn(kq.v));
+            sauXuLyKhach();
+          });
+          return;
+        }
+        // Lạc quan: đổi ngày ngay, gửi máy chủ ngầm; lỗi thì hoàn tác
+        var gocGH = ds.map(function (x) { return Object.assign({}, x); });
+        ds.forEach(function (x) { x.NgayDiDuKien = kq.v; x.TrangThai = tinhTrangThai(kq.v, x.NgayDiThucTe); });
+        toast((ds.length > 1 ? ds.length + ' người phòng ' + r.SoPhong : r.HoTen) + ' được gia hạn đến ' + vn(kq.v));
+        sauXuLyKhach();
+        API.goi('giaHan', { ids: ds.map(function (x) { return x.ID; }), ngay: kq.v }).then(function (kqs) {
           if (kqs[0] && kqs[0].DuLieuThu !== true) { kqs.forEach(function (x) { vaKhach(x); }); sauKhiGhi('khach'); }
-          toast((kqs.length > 1 ? kqs.length + ' người phòng ' + r.SoPhong : kqs[0].HoTen) + ' được gia hạn đến ' + vn(kq.v));
-          sauXuLyKhach();
-        });
+        }, function (er) { ds.forEach(function (x, i) { Object.assign(x, gocGH[i]); }); toast('Không lưu được gia hạn: ' + er.message + '. Đã hoàn tác.', 'loi'); lamMoiNen(); });
       });
     });
   }
@@ -1127,8 +1166,19 @@
           toast((kqs.length > 1 ? kqs.length + ' người phòng ' + r.SoPhong : kqs[0].HoTen) + ' đã rời đi ngày ' + vn(kq.v));
           sauXuLyKhach();
         };
-        if (ds.length === 1) goi('xacNhanDi', { id: id, ngay: kq.v }).then(function (x) { xong([x]); });
-        else goi('roiDiNhieu', { ids: ds.map(function (x) { return x.ID; }), ngay: kq.v }).then(xong);
+        if (r.DuLieuThu === true) {   // dữ liệu thử: giữ cách chờ máy chủ như cũ
+          if (ds.length === 1) goi('xacNhanDi', { id: id, ngay: kq.v }).then(function (x) { xong([x]); });
+          else goi('roiDiNhieu', { ids: ds.map(function (x) { return x.ID; }), ngay: kq.v }).then(xong);
+          return;
+        }
+        // Lạc quan: hiện "đã rời đi" ngay, gửi máy chủ ngầm; lỗi thì hoàn tác và báo
+        var goc = ds.map(function (x) { return Object.assign({}, x); });
+        ds.forEach(function (x) { x.NgayDiThucTe = kq.v; x.TrangThai = 'Đã rời đi'; });
+        toast((ds.length > 1 ? ds.length + ' người phòng ' + r.SoPhong : r.HoTen) + ' đã rời đi ngày ' + vn(kq.v));
+        sauXuLyKhach();
+        var guiDi = ds.length === 1 ? API.goi('xacNhanDi', { id: id, ngay: kq.v }).then(function (x) { return [x]; }) : API.goi('roiDiNhieu', { ids: ds.map(function (x) { return x.ID; }), ngay: kq.v });
+        guiDi.then(function (kqs) { if (kqs[0] && kqs[0].DuLieuThu !== true) { kqs.forEach(function (x) { vaKhach(x); }); sauKhiGhi('khach'); } },
+          function (er) { ds.forEach(function (x, i) { Object.assign(x, goc[i]); }); toast('Không lưu được xác nhận rời đi: ' + er.message + '. Đã hoàn tác.', 'loi'); lamMoiNen(); });
       });
     });
   }
@@ -1389,7 +1439,12 @@
     var kh = (layDem('dsTamTru') || []).filter(function (x) { return x.ID === id; })[0], ten = kh ? kh.HoTen : (($('#drawer h2') || {}).textContent || 'khách này');
     hoi('Xoá hồ sơ ' + ten + '?', 'Chỉ dùng khi nhập nhầm. Bản ghi sẽ bị xoá khỏi danh sách (nội dung vẫn lưu trong Lịch sử).', 'Xoá', true).then(function (ok) {
       if (!ok) return;
-      goi('xoaTamTru', { id: id }).then(function () { vaKhach(null, id); sauKhiGhi('khach'); toast('Đã xoá hồ sơ ' + ten); dongNganKeo(); lamMoi(); });
+      if (!kh || kh.DuLieuThu === true) { goi('xoaTamTru', { id: id }).then(function () { vaKhach(null, id); sauKhiGhi('khach'); toast('Đã xoá hồ sơ ' + ten); dongNganKeo(); lamMoi(); }); return; }
+      // Lạc quan: biến mất ngay, gửi máy chủ ngầm; lỗi thì đưa lại
+      var bk = Object.assign({}, kh);
+      vaKhach(null, id); toast('Đã xoá hồ sơ ' + ten); dongNganKeo(); lamMoi();
+      API.goi('xoaTamTru', { id: id }).then(function () { sauKhiGhi('khach'); },
+        function (er) { vaKhach(bk); toast('Không xoá được ' + ten + ': ' + er.message + '. Đã khôi phục.', 'loi'); lamMoiNen(); });
     });
   }
 
@@ -1469,7 +1524,7 @@
     var phu = '<span class="truncate">' + [dc, c.ToDanPho !== '' ? 'Tổ ' + c.ToDanPho : '', c.CSKV ? 'CSKV ' + c.CSKV : ''].filter(String).map(esc).join(' · ') + '</span>' +
       '<span class="shrink-0 whitespace-nowrap inline-flex items-center gap-0.5">· ' + ic('users', 'size-3.5') + soVN(c.KhachDangO) + '</span>' +
       (c.KhachQuaHan ? '<span class="shrink-0 whitespace-nowrap text-rose-ink">· ' + c.KhachQuaHan + ' quá hạn</span>' : '');
-    var nhan = dung ? '<span class="badge bg-fog text-fog-ink">Dừng HĐ</span>' : nhanKiemTra(c);
+    var nhan = c._tam ? '<span class="badge bg-sky text-sky-ink">Đang lưu…</span>' : dung ? '<span class="badge bg-fog text-fog-ink">Dừng HĐ</span>' : nhanKiemTra(c);
     var than = '<span class="min-w-0 flex-1"><b class="block text-sm font-semibold leading-snug break-words">' + esc(c.TenCoSo) + '</b>' +
       '<span class="flex flex-wrap items-center gap-1.5 mt-1"><span class="inline-flex shrink-0">' + badgeLoai(c.LoaiHinh) + '</span><span class="shrink-0">' + nhan + '</span></span>' +
       '<span class="flex items-center gap-1 text-xs text-muted mt-1 min-w-0">' + phu + '</span></span>';
@@ -1600,12 +1655,19 @@
     var c = (S.coSo || []).filter(function (x) { return x.MaCoSo === ma; })[0] || (S.coSoThu || []).filter(function (x) { return x.MaCoSo === ma; })[0];
     var da = muonDa !== undefined ? !muonDa : !!(c && (c.DaKiemTraThang || c.ChoDuyetKT));
     var chay = function () {
+      // Lạc quan: Admin tích/bỏ tích; cán bộ gửi hoặc huỷ đề nghị đang chờ -> đổi ô tích ngay, hoàn tác nếu lỗi
+      var goc = null, laDeNghi = !laAdmin();
+      if (c && c.DuLieuThu !== true && (laAdmin() || !da || (c.ChoDuyetKT && !c.DaKiemTraThang))) {
+        goc = Object.assign({}, c);
+        if (laDeNghi) c.ChoDuyetKT = !da; else { c.DaKiemTraThang = !da; c.NgayKiemTraThang = !da ? homNay() : ''; c.ChoDuyetKT = false; }
+        if ($('#cList')) veDsCoSo();
+      }
       goi('kiemTraCoSo', { ma: ma, daKiemTra: !da }).then(function (kq) {
         if (kq.DuLieuThu !== true) { vaCoSo(kq); sauKhiGhi('coso'); delete DEM.dsDeXuatCB; }
         toast(kq.choDuyet || kq.ChoDuyetKT ? 'Đã gửi đề nghị kiểm tra ' + kq.TenCoSo + ', chờ Admin phê duyệt' : kq.DaKiemTraThang ? 'Đã ghi kiểm tra ' + kq.TenCoSo + ' ngày ' + vn(kq.NgayKiemTraThang) : (c && c.ChoDuyetKT ? 'Đã huỷ đề nghị kiểm tra ' : 'Đã bỏ tích kiểm tra ') + kq.TenCoSo);
         if ($('#cList')) veDsCoSo();
         if (!$('#drawerWrap').hidden && $('#drawer').dataset.ma === ma && $('#csKhach')) { if (kq.DuLieuThu === true) veCoSo(kq, null); xemCoSo(ma); }
-      }, function () { if (khiHuy) khiHuy(); });
+      }, function () { if (goc) { Object.assign(c, goc); if ($('#cList')) veDsCoSo(); } if (khiHuy) khiHuy(); });
     };
     if (!da) return chay();
     if (c && c.ChoDuyetKT && !c.DaKiemTraThang) return chay();   // huỷ đề nghị đang chờ: không cần hỏi
@@ -1837,6 +1899,17 @@
       if (!moi) { d.ma = c.MaCoSo; d._phienBan = c.NgayCapNhat; }
       if (moi && ganDuLieuThu) d.duLieuThu = true;
       var nut = $('#fLuu'); nut.disabled = true;
+      if (moi && !ganDuLieuThu) {
+        // Lạc quan: dòng cơ sở "Đang lưu…" hiện ngay, máy chủ lưu ngầm; lỗi thì bỏ dòng tạm và báo
+        var tamCS = Object.assign({}, d, { MaCoSo: 'TAM-' + Date.now(), KhachDangO: 0, KhachSapHet: 0, KhachQuaHan: 0, _tam: true });
+        vaCoSo(tamCS); dongNganKeo(); toast('Đang lưu cơ sở ' + d.TenCoSo + '…'); lamMoi();
+        API.goi('themCoSo', d).then(function (kq) {
+          vaCoSo(null, tamCS.MaCoSo);
+          if (kq.DuLieuThu !== true) { vaCoSo(kq); sauKhiGhi('coso'); }
+          toast('Đã thêm ' + kq.TenCoSo); lamMoiNen();
+        }, function (err) { vaCoSo(null, tamCS.MaCoSo); lamMoiNen(); toast('Không lưu được cơ sở ' + d.TenCoSo + ': ' + (err.message || err) + '. Hãy thêm lại.', 'loi'); });
+        return;
+      }
       API.goi(moi ? 'themCoSo' : 'suaCoSo', d).then(function (kq) {
         if (kq.DuLieuThu !== true) { vaCoSo(kq); sauKhiGhi('coso'); }
         toast(moi ? 'Đã thêm ' + kq.MaCoSo : 'Đã lưu ' + kq.MaCoSo); dongNganKeo();
@@ -2520,9 +2593,12 @@
       var loi = function (m) { var p = $('#cccLoi'); p.textContent = m; p.classList.toggle('hidden', !m); return true; };
       if (!d.TenCoSo) return loi('Chưa nhập tên cơ sở.'); if (!d.LoaiHinh) return loi('Chưa chọn loại hình.'); if (!d.DiaChi) return loi('Chưa nhập địa chỉ.'); loi('');
       var nut = $('#cccLuu'), chu = nut.innerHTML; nut.disabled = true; nut.textContent = 'Đang lưu…';
+      // Lạc quan: hiện cơ sở "Đang lưu…" ngay, máy chủ lưu ngầm
+      var tamCS = Object.assign({}, d, { MaCoSo: 'TAM-' + Date.now(), KhachDangO: 0, KhachSapHet: 0, KhachQuaHan: 0, _tam: true });
+      vaCoSo(tamCS); dongNganKeo(); toast('Đang lưu cơ sở ' + d.TenCoSo + '…'); lamMoi();
       API.goi('themCoSo', d).then(function (c) {
-        vaCoSo(c); dongNganKeo(); toast('Đã thêm cơ sở ' + c.TenCoSo); lamMoi();   // gộp cơ sở mới vào bộ đệm, khỏi tải lại cả danh sách (tiết kiệm ~2 giây)
-      }).catch(function (er) { nut.disabled = false; nut.innerHTML = chu; loi(er.message); });
+        vaCoSo(null, tamCS.MaCoSo); vaCoSo(c); toast('Đã thêm cơ sở ' + c.TenCoSo); lamMoiNen();
+      }).catch(function (er) { vaCoSo(null, tamCS.MaCoSo); lamMoiNen(); toast('Không lưu được cơ sở ' + d.TenCoSo + ': ' + (er.message || er) + '. Hãy thêm lại.', 'loi'); });
     });
   }
 
@@ -3102,7 +3178,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.13.1';
+  var PB_GIAO_DIEN = '2.14.0';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
