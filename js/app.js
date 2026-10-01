@@ -2521,7 +2521,7 @@
       if (!d.TenCoSo) return loi('Chưa nhập tên cơ sở.'); if (!d.LoaiHinh) return loi('Chưa chọn loại hình.'); if (!d.DiaChi) return loi('Chưa nhập địa chỉ.'); loi('');
       var nut = $('#cccLuu'), chu = nut.innerHTML; nut.disabled = true; nut.textContent = 'Đang lưu…';
       API.goi('themCoSo', d).then(function (c) {
-        delete DEM.dsCoSo; dongNganKeo(); toast('Đã thêm cơ sở ' + c.TenCoSo); lamMoi();
+        vaCoSo(c); dongNganKeo(); toast('Đã thêm cơ sở ' + c.TenCoSo); lamMoi();   // gộp cơ sở mới vào bộ đệm, khỏi tải lại cả danh sách (tiết kiệm ~2 giây)
       }).catch(function (er) { nut.disabled = false; nut.innerHTML = chu; loi(er.message); });
     });
   }
@@ -3102,7 +3102,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.13.0';
+  var PB_GIAO_DIEN = '2.13.1';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
