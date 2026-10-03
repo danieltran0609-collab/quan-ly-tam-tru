@@ -165,6 +165,8 @@
       '<div class="card p-4 flex items-center gap-4"><span class="grid place-items-center size-14 shrink-0 rounded-full bg-peach text-peach-ink text-xl font-semibold">' + esc(chu) + '</span>' +
       '<span class="min-w-0"><b class="block truncate">' + esc(u.HoTen || '(chưa có họ tên)') + '</b><span class="block text-sm text-muted truncate">' + esc(u.Email) + '</span>' +
       '<span class="flex flex-wrap gap-1.5 mt-1.5"><span class="badge bg-lilac text-lilac-ink">' + esc(quyen) + '</span><span class="badge bg-canvas text-ink">' + (pv.toanPhuong ? 'Toàn phường' : esc(moTaDiaBanNgan(pv)) + ' · ' + soVN(pv.soCoSo) + ' cơ sở') + '</span></span></span></div>' +
+      '<div class="sm:hidden grid ' + (API.cheDo === 'may-chu' ? 'grid-cols-2' : 'grid-cols-1') + ' gap-2 mt-3"><button type="button" data-lam-moi class="btn-soft h-11">' + ic('refresh') + 'Làm mới</button>' +
+      (API.cheDo === 'may-chu' ? '<button type="button" data-dang-xuat class="btn-danger h-11">' + ic('out') + 'Đăng xuất</button>' : '') + '</div>' +
       nhom('Quản lý', laChuCoSo() ? [
         o('#/de-xuat', 'clock', 'Khai báo & đề xuất', 'Khai báo mới, sửa, xoá hồ sơ, xác nhận rời đi đã gửi cho cán bộ')
       ] : [
@@ -180,7 +182,7 @@
         o('privacy.html', 'idcard', 'Chính sách quyền riêng tư', 'Dữ liệu được lưu và bảo vệ thế nào (mở tab mới)', '', true)
       ]) +
       chanDoan +
-      '<div class="grid ' + (API.cheDo === 'may-chu' ? 'grid-cols-2' : 'grid-cols-1') + ' gap-2 mt-6"><button type="button" data-lam-moi class="btn-soft h-12">' + ic('refresh') + 'Làm mới</button>' +
+      '<div class="hidden sm:grid ' + (API.cheDo === 'may-chu' ? 'grid-cols-2' : 'grid-cols-1') + ' gap-2 mt-6"><button type="button" data-lam-moi class="btn-soft h-12">' + ic('refresh') + 'Làm mới</button>' +
       (API.cheDo === 'may-chu' ? '<button type="button" data-dang-xuat class="btn-danger h-12">' + ic('out') + 'Đăng xuất</button>' : '') + '</div>' +
       '<p class="text-center text-xs text-muted mt-4">Phiên bản giao diện ' + PB_GIAO_DIEN + '</p>';
   }
@@ -3699,7 +3701,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.26.0';
+  var PB_GIAO_DIEN = '2.27.0';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
