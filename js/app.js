@@ -79,6 +79,7 @@
     phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
     listcheck: '<path d="M11 6h9M11 12h9M11 18h9"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/>',
     flask: '<path d="M9 3h6M10 3v6.2L4.8 18a1.5 1.5 0 0 0 1.3 2.2h11.8a1.5 1.5 0 0 0 1.3-2.2L14 9.2V3"/><path d="M7.5 15h9"/>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>',
     refresh: '<path d="M20 6v5h-5"/><path d="M18.5 15a7 7 0 1 1-.8-7.8L20 11"/>'
   };
   var ic = function (k, cls) { return '<svg viewBox="0 0 24 24" class="' + (cls || 'size-4') + '" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[k] + '</svg>'; };
@@ -144,7 +145,8 @@
     var t = (laChuCoSo() ? TRANG_CC : TRANG).concat([QUAN_TRI, TAI_KHOAN]).filter(function (x) { return x.id === cur; })[0];
     $('#mTitle').textContent = t ? t.ten : 'Ứng dụng khai báo cư trú';
     var oNha = cur === 'tong-quan';
-    if ($('#nutLui')) { $('#nutLui').hidden = oNha; $('#nutNha').hidden = oNha; }
+    // Biểu tượng ứng dụng bên trái đã dẫn về Tổng quan; không hiện thêm nút nhà trùng chức năng.
+    if ($('#nutLui')) { $('#nutLui').hidden = oNha; $('#nutNha').hidden = true; }
   }
 
   /** Trang "Tài khoản": thông tin người dùng + lối vào quản trị, lịch sử, dữ liệu thử, tài liệu, đăng xuất. */
@@ -617,7 +619,7 @@
       '<div id="kTabs" class="mt-2"></div>' +
       '<div class="flex gap-2 py-2.5 overflow-x-auto scroll-thin -mx-1 px-1">' +
       chipNho('data-homnay-chip', S.loc.homNay, ic('calendar', 'size-3.5') + 'Hôm nay') +
-      (S.loc.chuaKhaiBao ? '<button class="btn-soft" data-bo-loc-khach>Chưa khai báo ×</button>' : '') +
+      chipNho('data-chuakhaibao-chip', S.loc.chuaKhaiBao, ic('alert', 'size-3.5') + 'Chưa khai báo') +
       chipNho('data-ct10-chip', S.loc.ct10, ic('idcard', 'size-3.5') + 'Chưa gửi CT10') +
       '<span id="kLocDangChon" class="contents"></span></div></div>' +
       '<div id="kList">' + khungCho(3) + '</div>';
@@ -3363,20 +3365,27 @@
     location.hash = truoc || '#/tong-quan';
     if ((truoc || '#/tong-quan') === (location.hash || '#/tong-quan')) { dangLui = false; route(); }
   }
-  var thongBaoDangTai = false, thongBaoDaBiet = null;
+  var thongBaoDangTai = false, thongBaoDaBiet = null, dsThongBaoNoiO = [];
+  function moThongBaoNoiO() {
+    var ds = dsThongBaoNoiO;
+    moNganKeo(dauNganKeo('Thông báo chuyển nơi ở', 'Công dân chuyển đến hoặc rời khỏi địa bàn phụ trách') + '<div class="flex-1 overflow-y-auto px-5 pb-5">' + (ds.length ? ds.map(function (r) {
+      return '<article class="border-b border-line py-3"><div class="flex items-start gap-2"><span class="mt-0.5 grid place-items-center size-8 shrink-0 rounded-lg ' + (r.DaDoc ? 'bg-canvas text-muted' : 'bg-brand-50 text-brand-600') + '">' + ic('out', 'size-4') + '</span><span class="min-w-0 flex-1"><b class="block text-sm">' + esc(r.HoTen || 'Hồ sơ công dân') + '</b><p class="text-sm mt-0.5">' + esc(r.noiDung) + '</p><p class="text-xs text-muted mt-1">' + vnTG(r.NgayTao) + '</p>' + (!r.DaDoc ? '<button class="btn-soft btn-sm mt-2" data-doc-thong-bao="' + esc(r.MaThongBao) + '">Đánh dấu đã đọc</button>' : '<span class="inline-block text-xs text-muted mt-2">Đã đọc</span>') + '</span></div></article>';
+    }).join('') : '<div class="py-12 text-center text-sm text-muted">Chưa có thông báo chuyển nơi ở.</div>') + '</div>');
+    $$('[data-doc-thong-bao]').forEach(function (b) { b.addEventListener('click', function () { b.disabled = true; API.goi('docThongBao', { ma: b.dataset.docThongBao }).then(function () { b.textContent = 'Đã đọc'; capNhatThongBao(); }).catch(function (e) { b.disabled = false; toast(e.message, 'loi'); }); }); });
+  }
   function capNhatThongBao() {
     if (!duocGhi() || document.hidden || thongBaoDangTai || !$('#view')) return;
     thongBaoDangTai = true;
     API.goi('dsThongBao', {}).then(function (ds) {
       if (!duocGhi()) return;
+      dsThongBaoNoiO = ds;
       var moi = ds.filter(function (r) { return !r.DaDoc; });
-      if (!$('#thongBaoNoiO')) $('#view').insertAdjacentHTML('beforebegin', '<div id="thongBaoNoiO" class="px-4 py-2"></div>');
-      $('#thongBaoNoiO').innerHTML = '<button id="moThongBaoNoiO" class="btn-soft">Thông báo chuyển nơi ở' + (moi.length ? ' (' + moi.length + ' chưa đọc)' : '') + '</button>';
-      $('#moThongBaoNoiO').addEventListener('click', function () {
-        moNganKeo(dauNganKeo('Thông báo chuyển nơi ở', 'Chỉ hiển thị hồ sơ thuộc phạm vi của bạn') + '<div class="flex-1 overflow-y-auto p-5">' + (ds.length ? ds.map(function (r) {
-          return '<article class="border-b border-line py-3"><b>' + esc(r.HoTen || 'Hồ sơ công dân') + '</b><p class="text-sm">' + esc(r.noiDung) + '</p><p class="text-xs text-muted">' + vnTG(r.NgayTao) + '</p>' + (!r.DaDoc ? '<button class="btn-soft mt-2" data-doc-thong-bao="' + esc(r.MaThongBao) + '">Đánh dấu đã đọc</button>' : '<span class="text-xs text-muted">Đã đọc</span>') + '</article>';
-        }).join('') : '<p>Chưa có thông báo.</p>') + '</div>');
-        $$('[data-doc-thong-bao]').forEach(function (b) { b.addEventListener('click', function () { b.disabled=true; API.goi('docThongBao',{ma:b.dataset.docThongBao}).then(function () { b.textContent='Đã đọc'; capNhatThongBao(); }).catch(function (e) { b.disabled=false; toast(e.message,'loi'); }); }); });
+      $$('[data-thong-bao-noi-o]').forEach(function (b) {
+        b.hidden = false;
+        b.setAttribute('aria-label', 'Thông báo chuyển nơi ở' + (moi.length ? ', ' + moi.length + ' chưa đọc' : ''));
+        b.setAttribute('title', 'Thông báo chuyển nơi ở');
+        var badge = b.querySelector('[data-so-thong-bao]');
+        if (badge) { badge.textContent = moi.length > 99 ? '99+' : moi.length; badge.hidden = !moi.length; }
       });
       if (thongBaoDaBiet && moi.some(function (r) { return thongBaoDaBiet.indexOf(r.MaThongBao) < 0; })) { sauKhiGhi('khach'); toast('Có công dân đã chuyển nơi ở. Xem thông báo chuyển nơi ở.'); }
       thongBaoDaBiet = ds.map(function (r) { return r.MaThongBao; });
@@ -3423,7 +3432,7 @@
   }
 
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-cs-xu-ly],[data-them-khach],[data-xem-khach],[data-sua-khach],[data-di],[data-xoa-khach],[data-tt],[data-loai],[data-them-coso],[data-xem-coso],[data-sua-coso],[data-xoa-coso],[data-loc-loai],[data-loc-cskv],[data-them-cb],[data-sua-cb],[data-xoa-cb],[data-duyet-cb],[data-tuchoi-cb],[data-tra-cuu],[data-xuat-khach],[data-xuat-coso],[data-gia-han],[data-xem-them],[data-bs-loai],[data-bs-cskv],[data-sao-loi-moi],[data-toggle-ct10],[data-ct10-chip],[data-them-cs-thu],[data-them-kh-thu],[data-kt-coso],[data-trang],[data-homnay-chip],[data-xem-ds],[data-xuat-tq],[data-mo-loc],[data-xoa-loc],[data-ap-dung-loc],[data-loc-khach],[data-xoa-loc-khach],[data-ap-loc-khach],[data-bo-loc-khach],[data-thao-tac-kh],[data-tk-gh],[data-tk-di],[data-tk-ct10],[data-tk-sua],[data-tk-xem],[data-tab-kt],[data-thao-tac-cs],[data-tt-kt],[data-tt-xem],[data-tt-khach],[data-chon-nhieu],[data-tich-cs],[data-bulk],[data-nhap-ds],[data-tt-ds],[data-cc-xem],[data-cc-tab],[data-cc-co],[data-cc-sua],[data-cc-di],[data-cc-xoa],[data-dx-tab],[data-dx-duyet],[data-dx-kb],[data-dx-kt-all],[data-dx-tuchoi],[data-dx-huy],[data-them-ccs],[data-gan-ccs],[data-sua-ccs],[data-moi-ccs],[data-them-cs-cc],[data-nhap-kt2]');
+    var t = e.target.closest('[data-cs-xu-ly],[data-them-khach],[data-xem-khach],[data-sua-khach],[data-di],[data-xoa-khach],[data-tt],[data-loai],[data-them-coso],[data-xem-coso],[data-sua-coso],[data-xoa-coso],[data-loc-loai],[data-loc-cskv],[data-them-cb],[data-sua-cb],[data-xoa-cb],[data-duyet-cb],[data-tuchoi-cb],[data-tra-cuu],[data-xuat-khach],[data-xuat-coso],[data-gia-han],[data-xem-them],[data-bs-loai],[data-bs-cskv],[data-sao-loi-moi],[data-toggle-ct10],[data-ct10-chip],[data-chuakhaibao-chip],[data-thong-bao-noi-o],[data-them-cs-thu],[data-them-kh-thu],[data-kt-coso],[data-trang],[data-homnay-chip],[data-xem-ds],[data-xuat-tq],[data-mo-loc],[data-xoa-loc],[data-ap-dung-loc],[data-loc-khach],[data-xoa-loc-khach],[data-ap-loc-khach],[data-bo-loc-khach],[data-thao-tac-kh],[data-tk-gh],[data-tk-di],[data-tk-ct10],[data-tk-sua],[data-tk-xem],[data-tab-kt],[data-thao-tac-cs],[data-tt-kt],[data-tt-xem],[data-tt-khach],[data-chon-nhieu],[data-tich-cs],[data-bulk],[data-nhap-ds],[data-tt-ds],[data-cc-xem],[data-cc-tab],[data-cc-co],[data-cc-sua],[data-cc-di],[data-cc-xoa],[data-dx-tab],[data-dx-duyet],[data-dx-kb],[data-dx-kt-all],[data-dx-tuchoi],[data-dx-huy],[data-them-ccs],[data-gan-ccs],[data-sua-ccs],[data-moi-ccs],[data-them-cs-cc],[data-nhap-kt2]');
     if (!t) return;
     var d = t.dataset;
     // Mỗi nút của cộng tác viên chỉ chạy trong đúng mục đang hiển thị.
@@ -3443,7 +3452,9 @@
       return;
     }
     if ('homnayChip' in d) { S.loc.homNay = !S.loc.homNay; if (S.loc.homNay && S.loc.trangThai === '') S.loc.trangThai = '*'; t.setAttribute('aria-pressed', String(S.loc.homNay)); return veDsKhach(); }
+    if ('chuakhaibaoChip' in d) { S.loc.chuaKhaiBao = !S.loc.chuaKhaiBao; t.setAttribute('aria-pressed', String(S.loc.chuaKhaiBao)); return veDsKhach(); }
     if ('ct10Chip' in d) { S.loc.ct10 = !S.loc.ct10; t.setAttribute('aria-pressed', String(S.loc.ct10)); return veDsKhach(); }
+    if ('thongBaoNoiO' in d) return moThongBaoNoiO();
     e.preventDefault(); e.stopPropagation();
     if ('csXuLy' in d) { location.hash = '#/de-xuat/' + encodeURIComponent(d.csXuLy); return; }
     if ('themKhach' in d) return moKhaiBao(d.themKhach);
@@ -3524,9 +3535,10 @@
     if ('xuatTq' in d) return xuatVoiTrangThai(t, xuatTongQuan);
     if ('xemDs' in d) {
       var locMoi = { q: '', trangThai: '', maCoSo: '', tu: '', den: '', loai: '' };
-      if (d.xemDs === 'chuakhaibao') { locMoi.chuaKhaiBao = true; S.loc = locMoi; location.hash = '#/tam-tru'; }
-      else if (d.xemDs === 'ct10') { locMoi.ct10 = true; S.loc = locMoi; location.hash = '#/tam-tru'; }
-      else if (d.xemDs === 'homnay') { locMoi.homNay = true; locMoi.trangThai = '*'; S.loc = locMoi; location.hash = '#/tam-tru'; }
+      var denCongDan = function () { if (location.hash === '#/tam-tru') trangTamTru(); else location.hash = '#/tam-tru'; };
+      if (d.xemDs === 'chuakhaibao') { locMoi.chuaKhaiBao = true; S.loc = locMoi; denCongDan(); }
+      else if (d.xemDs === 'ct10') { locMoi.ct10 = true; S.loc = locMoi; denCongDan(); }
+      else if (d.xemDs === 'homnay') { locMoi.homNay = true; locMoi.trangThai = '*'; S.loc = locMoi; denCongDan(); }
       else { S.locCS = { q: '', loaiHinh: '', cskv: '', tdp: '', kt: d.xemDs.slice(3) }; location.hash = '#/co-so'; }
       return;
     }
