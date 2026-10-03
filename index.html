@@ -130,6 +130,7 @@
     <nav id="navSide" class="flex flex-col gap-1"></nav>
     <div class="side-footer mt-auto pt-3 shrink-0">
       <a href="huongdan.html" target="_blank" rel="noopener" class="nav-a mb-2"><svg viewBox="0 0 24 24" class="size-[18px]" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.1M12 17h.01"/></svg><span class="side-nav-label">Hướng dẫn</span></a>
+      <button type="button" data-thong-bao-noi-o hidden class="nav-a w-full mb-1 relative" title="Thông báo chuyển nơi ở"><svg viewBox="0 0 24 24" class="size-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg><span class="side-nav-label">Thông báo chuyển nơi ở</span><span data-so-thong-bao hidden class="ml-auto badge bg-rose text-rose-ink"></span></button>
       <button type="button" data-lam-moi class="nav-a w-full mb-1" title="Làm mới dữ liệu"><svg viewBox="0 0 24 24" class="size-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6v5h-5"/><path d="M18.5 15a7 7 0 1 1-.8-7.8L20 11"/></svg><span class="side-nav-label">Làm mới</span></button>
       <button id="sideLogout" type="button" data-dang-xuat hidden class="nav-a w-full mb-2 text-rose-ink hover:bg-rose" title="Đăng xuất"><svg viewBox="0 0 24 24" class="size-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg><span class="side-nav-label">Đăng xuất</span></button>
       <div id="userBox" class="flex items-center gap-3 p-3 rounded-2xl bg-canvas"></div>
@@ -146,6 +147,7 @@
       </a>
       <b id="mTitle" class="text-[15px] truncate">Ứng dụng khai báo cư trú</b>
       <span class="ml-auto flex items-center gap-1">
+        <button type="button" data-thong-bao-noi-o hidden class="relative grid place-items-center size-11 rounded-xl text-muted hover:bg-canvas hover:text-ink" aria-label="Thông báo chuyển nơi ở" title="Thông báo chuyển nơi ở"><svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg><span data-so-thong-bao hidden class="absolute top-0.5 right-0 grid place-items-center min-w-4 h-4 px-1 rounded-full bg-rose-ink text-white text-[9px] font-semibold"></span></button>
         <a id="nutNha" href="#/tong-quan" hidden class="grid place-items-center size-9 rounded-xl text-muted hover:bg-canvas hover:text-ink" aria-label="Về trang chủ" title="Trang chủ">
           <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
         </a>
@@ -195,8 +197,8 @@
 
 <div id="toasts" class="fixed z-[60] bottom-20 lg:bottom-6 right-4 left-4 sm:left-auto flex flex-col gap-2 items-end pointer-events-none"></div>
 
-<script src="js/config.js?v=2.27.0"></script>
-<script src="js/api.js?v=2.27.0"></script>
-<script src="js/app.js?v=2.27.0"></script>
+<script src="js/config.js?v=2.28.0"></script>
+<script src="js/api.js?v=2.28.0"></script>
+<script src="js/app.js?v=2.28.0"></script>
 </body>
 </html>
