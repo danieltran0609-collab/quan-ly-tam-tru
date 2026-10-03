@@ -3149,19 +3149,35 @@
   // ---------- Cộng tác viên: trang chính ----------
   function trangCCTongQuan() {
     var v = $('#view'), luot = S.luot;
-    v.innerHTML = dauTrang('Tổng quan', 'Số liệu chung toàn khu vực do cán bộ phụ trách (không phải riêng cơ sở của bạn)', '<button class="btn-primary" data-them-khach>' + ic('plus') + 'Khai báo</button>') + '<div id="ccTQ">' + khungCho(3) + '</div>';
+    v.innerHTML = dauTrang('Tổng quan', 'Số liệu chung của khu vực do cán bộ phụ trách') + '<div id="ccTQ">' + khungCho(3) + '</div>';
     docNhanh('tongQuanCongTacVien', 'tongQuanCongTacVien', {}).then(function (x) {
       if (luot !== S.luot || !$('#ccTQ')) return;
-      var o = function (ten, so, icon, mau) { return '<article class="card p-3 sm:p-4 text-center"><span class="grid place-items-center size-8 sm:size-10 rounded-xl mx-auto ' + mau + '">' + ic(icon) + '</span><b class="block text-lg sm:text-2xl mt-2">' + soVN(so) + '</b><span class="block text-xs sm:text-sm leading-tight text-muted">' + ten + '</span></article>'; };
-      $('#ccTQ').innerHTML = '<div class="grid grid-cols-3 gap-2 sm:gap-3">' + o('Hộ KT2 đến (khu vực)', x.ho, 'hoKT2', 'bg-butter text-butter-ink') + o('Cơ sở lưu trú (khu vực)', x.coSo, 'building', 'bg-sky text-sky-ink') + o('Người đang cư trú (khu vực)', x.nguoiDangCuTru, 'users', 'bg-mint text-mint-ink') + '</div>' +
-        '<div class="card p-4 mt-3 flex flex-wrap gap-2"><a class="btn-soft" href="#/tam-tru">' + ic('users') + 'Xem công dân</a><a class="btn-soft" href="#/co-so">' + ic('building') + 'Cơ sở của tôi</a></div>';
+      // Một khối số liệu: ba ô cùng hàng, biểu tượng + số lớn + nhãn ngắn
+      var so = function (ten, n, icon, mau, link) {
+        return '<a href="' + link + '" class="flex flex-col items-center gap-1.5 px-2 py-4 text-center hover:bg-canvas/60"><span class="grid place-items-center size-10 rounded-xl ' + mau + '">' + ic(icon, 'size-5') + '</span>' +
+          '<b class="text-2xl font-semibold leading-none">' + soVN(n) + '</b><span class="text-xs text-muted leading-tight">' + ten + '</span></a>';
+      };
+      // Ô thao tác lớn, dễ bấm bằng một tay
+      var viec = function (attr, icon, mau, tieuDe, moTa) {
+        return '<' + (attr.indexOf('href=') === 0 ? 'a ' : 'button type="button" ') + attr + ' class="card flex flex-col items-start gap-3 p-4 text-left min-h-[7.5rem] hover:border-[#D6DAF5] transition active:scale-[.99]"><span class="grid place-items-center size-11 rounded-2xl ' + mau + '">' + ic(icon, 'size-6') + '</span>' +
+          '<span><b class="block text-[15px] font-semibold leading-snug">' + tieuDe + '</b><span class="block text-xs text-muted mt-0.5 leading-snug">' + moTa + '</span></span></' + (attr.indexOf('href=') === 0 ? 'a' : 'button') + '>';
+      };
+      $('#ccTQ').innerHTML =
+        '<section class="card overflow-hidden mb-4"><div class="grid grid-cols-3 divide-x divide-line">' +
+        so('Người đang cư trú', x.nguoiDangCuTru, 'users', 'bg-mint text-mint-ink', '#/tam-tru') + so('Cơ sở lưu trú', x.coSo, 'building', 'bg-sky text-sky-ink', '#/co-so') + so('Hộ KT2 đến', x.ho, 'hoKT2', 'bg-butter text-butter-ink', '#/co-so') + '</div>' +
+        '<p class="border-t border-line px-4 py-2 text-xs text-muted text-center">Số liệu toàn khu vực của cán bộ phụ trách, không phải riêng cơ sở của bạn</p></section>' +
+        '<h2 class="text-xs font-semibold uppercase tracking-wider text-muted px-1 mb-2">Việc thường làm</h2>' +
+        '<div class="grid grid-cols-2 gap-3">' +
+        viec('data-them-khach', 'plus', 'bg-brand-50 text-brand-600', 'Khai báo công dân', 'Từng người, quét QR trên CCCD') +
+        viec('data-nhap-ds', 'users', 'bg-mint text-mint-ink', 'Khai báo nhiều người', 'Nhập danh sách hoặc tệp Excel') +
+        viec('data-them-cs-cc', 'building', 'bg-sky text-sky-ink', 'Thêm cơ sở', 'Nhà trọ, nhà nghỉ, Hộ KT2 đến…') +
+        viec('href="#/tam-tru"', 'idcard', 'bg-butter text-butter-ink', 'Xem công dân', 'Tra cứu, đề xuất sửa / rời đi') + '</div>';
     }).catch(function (e) { if ($('#ccTQ')) $('#ccTQ').innerHTML = '<div class="card p-5 text-rose-ink">' + esc(e.message) + '</div>'; });
   }
 
   function trangCCCoSo() {
     var v = $('#view'), luot = S.luot;
-    v.innerHTML = dauTrang('Cơ sở của tôi', 'Khai báo cư trú và theo dõi người đang lưu trú', '<button class="btn-primary" data-them-khach>' + ic('plus') + '<span>Khai báo</span></button>',
-      nutCongCu('data-nhap-ds', 'users', 'Khai báo nhiều người') + nutCongCu('data-them-cs-cc', 'building', 'Thêm cơ sở')) + '<div id="ccND">' + khungCho(3) + '</div>';
+    v.innerHTML = dauTrang('Cơ sở của tôi', 'Cơ sở được giao: khai báo cư trú và theo dõi người đang lưu trú', '<button class="btn-primary" data-them-cs-cc>' + ic('plus') + '<span>Thêm cơ sở</span></button>') + '<div id="ccND">' + khungCho(3) + '</div>';
     var ve = function () {
       if (luot !== S.luot || !$('#ccND')) return;
       var cs = (S.coSo || []).filter(function (c) { return c.DuocGiao !== false; }), cho = demDeXuatCho(layDem('dsDeXuat'));
@@ -3212,7 +3228,7 @@
   function trangCCKhach() {
     var v = $('#view'), luot = S.luot;
     S.ccLoc = S.ccLoc || { q: '', tt: 'dang', ma: '' };
-    v.innerHTML = dauTrang('Công dân cư trú', 'Tất cả công dân trên địa bàn cán bộ phụ trách', '<button class="btn-primary" data-them-khach>' + ic('plus') + '<span>Khai báo</span></button>', nutCongCu('data-nhap-ds', 'users', 'Khai báo nhiều người')) +
+    v.innerHTML = dauTrang('Công dân cư trú', 'Tất cả công dân trên địa bàn cán bộ phụ trách', '<button class="btn-primary" data-them-khach>' + ic('plus') + '<span>Khai báo công dân</span></button>') +
       '<div class="card px-3 sm:px-4 pt-3 mb-3"><label class="relative block"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted">' + ic('search') + '</span>' +
       '<input id="ccQ" type="search" class="inp pl-9" placeholder="Tìm họ tên, CCCD, phòng…" value="' + esc(S.ccLoc.q) + '"></label><div id="ccTabs" class="mt-2"></div><div id="ccCoSoLoc" class="flex gap-2 py-2.5 overflow-x-auto scroll-thin -mx-1 px-1"></div></div><div id="ccKList">' + khungCho(3) + '</div>';
     $('#ccQ').addEventListener('input', debounce(function (e) { S.ccLoc.q = e.target.value; veCCKhach(); }, 150));
@@ -3580,8 +3596,9 @@
     // Mỗi nút của cộng tác viên chỉ chạy trong đúng mục đang hiển thị.
     if (laChuCoSo()) {
       var muc = decodeURIComponent(location.hash.replace('#/', '') || 'tong-quan').split('/')[0];
-      var dung = ('themKhach' in d || 'nhapDs' in d) ? (muc === 'co-so' || muc === 'tam-tru') :
-        ('themCsCc' in d || 'ccXem' in d) ? muc === 'co-so' :
+      var dung = ('themKhach' in d || 'nhapDs' in d) ? (muc === 'co-so' || muc === 'tam-tru' || muc === 'tong-quan') :
+        'themCsCc' in d ? (muc === 'co-so' || muc === 'tong-quan') :
+        'ccXem' in d ? muc === 'co-so' :
         ('xemKhach' in d || 'ccTab' in d || 'ccCo' in d || 'ccSua' in d || 'ccDi' in d || 'ccXoa' in d || 'xemThem' in d) ? muc === 'tam-tru' :
         ('dxHuy' in d) ? muc === 'de-xuat' : false;
       if (!dung) return;
@@ -3858,7 +3875,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.32.0';
+  var PB_GIAO_DIEN = '2.33.0';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
