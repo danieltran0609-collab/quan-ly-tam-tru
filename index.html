@@ -20,13 +20,13 @@
 <style type="text/tailwindcss">
   @theme {
     --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
-    --color-canvas: #F6F7FB;
+    --color-canvas: #EEF3FA;
     --color-ink: #2B2D42;
     --color-muted: #6B7089;
     --color-line: #E9EAF2;
-    --color-brand: #6C7BF2;
-    --color-brand-600: #5463E6;
-    --color-brand-50: #EEF0FE;
+    --color-brand: #1769E0;
+    --color-brand-600: #0F58C5;
+    --color-brand-50: #E9F2FF;
     --color-mint: #DDF4EA;     --color-mint-ink: #1F6B4A;
     --color-butter: #FFF1C9;   --color-butter-ink: #8A5A00;
     --color-rose: #FDE0E0;     --color-rose-ink: #A12B2B;
@@ -34,19 +34,19 @@
     --color-lilac: #EFEAF8;    --color-lilac-ink: #5B3FA0;
     --color-peach: #FDE8D7;    --color-peach-ink: #9A4A14;
     --color-fog: #ECEEF2;      --color-fog-ink: #555B66;
-    --shadow-soft: 0 1px 2px rgb(43 45 66 / .04), 0 4px 16px rgb(43 45 66 / .06);
+    --shadow-soft: 0 5px 18px rgb(52 72 108 / .06);
   }
   @utility card { @apply bg-white rounded-2xl border border-line shadow-soft; }
-    @utility btn-primary { @apply inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl text-sm font-medium transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer bg-brand text-white hover:bg-brand-600; }
-  @utility btn-soft { @apply inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl text-sm font-medium transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer bg-brand-50 text-brand-600 hover:bg-[#E2E5FD]; }
-  @utility btn-ghost { @apply inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl text-sm font-medium transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer text-muted hover:bg-canvas hover:text-ink; }
-  @utility btn-danger { @apply inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl text-sm font-medium transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer bg-rose text-rose-ink hover:bg-[#FBD0D0]; }
+  @utility btn-primary { @apply inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl text-sm font-medium transition active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-brand text-white hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25; }
+  @utility btn-soft { @apply inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl text-sm font-medium transition active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-brand-50 text-brand-600 hover:bg-[#DCEAFF] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20; }
+  @utility btn-ghost { @apply inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl text-sm font-medium transition active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-muted hover:bg-canvas hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20; }
+  @utility btn-danger { @apply inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl text-sm font-medium transition active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-rose text-rose-ink hover:bg-[#FBD0D0] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-ink/15; }
   @utility btn-sm { @apply h-8 px-3 text-[13px] rounded-lg; }
   @utility inp { @apply w-full h-10 px-3 rounded-xl border border-line bg-white text-sm text-ink placeholder:text-muted/70 outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/15; }
   @utility lbl { @apply block text-[13px] font-medium text-muted mb-1.5; }
-  @utility chip { @apply inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] font-medium border border-line bg-white text-muted transition cursor-pointer hover:text-ink; &[aria-pressed="true"] { @apply bg-ink text-white border-ink; } }
+  @utility chip { @apply inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] font-medium border border-line bg-white text-muted transition cursor-pointer hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20; &[aria-pressed="true"] { @apply bg-ink text-white border-ink; } }
   @utility badge { @apply inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-xs font-medium whitespace-nowrap; }
-  @utility nav-a { @apply flex items-center gap-3 h-11 px-3 rounded-xl text-sm font-medium text-muted transition hover:bg-canvas hover:text-ink; &[aria-current="page"] { @apply bg-brand-50 text-brand-600; } }
+  @utility nav-a { @apply flex items-center gap-3 h-11 px-3 rounded-xl text-sm font-medium text-muted transition hover:bg-canvas hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20; &[aria-current="page"] { @apply bg-brand-50 text-brand-600; } }
   @utility th { @apply text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3 bg-canvas/70; }
   @utility td { @apply px-4 py-3 text-sm border-t border-line align-middle; }
 </style>
@@ -54,6 +54,17 @@
   [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; }
   body { font-feature-settings: "tnum" 1; }
+  .app-side { transition: width .3s cubic-bezier(.22,1,.36,1); }
+  .app-side .nav-a { white-space: nowrap; }
+  @media (min-width: 1024px) {
+    .app-side { width: 86px; margin: 22px 0 22px 22px; height: calc(100vh - 44px); border: 1px solid rgba(255,255,255,.8); border-radius: 24px; box-shadow: 0 22px 60px rgb(34 55 91 / .12); overflow: hidden; }
+    .app-side:hover, .app-side:focus-within { width: 264px; }
+    .app-side .side-wordmark, .app-side .nav-a { min-width: 220px; }
+    .app-side .side-copy, .app-side .side-nav-label, .app-side .side-nav-heading, .app-side #userBox > :not(:first-child) { opacity: 0; transition: opacity .16s; }
+    .app-side .side-nav-label { pointer-events: none; }
+    .app-side:hover .side-copy, .app-side:focus-within .side-copy, .app-side:hover .side-nav-label, .app-side:focus-within .side-nav-label, .app-side:hover .side-nav-heading, .app-side:focus-within .side-nav-heading, .app-side:hover #userBox > :not(:first-child), .app-side:focus-within #userBox > :not(:first-child) { opacity: 1; }
+    .app-main { padding-left: 20px; }
+  }
   .scroll-thin::-webkit-scrollbar { height: 6px; width: 6px; }
   .scroll-thin::-webkit-scrollbar-thumb { background: #DADCE8; border-radius: 99px; }
   .drawer { transition: transform .25s ease; }
@@ -85,6 +96,12 @@
     .chip:not(.chip-nho) { min-height: 44px; padding-left: 14px; padding-right: 14px; }
     .btn-sm { min-width: 44px; }
     #nutLui, #nutNha, #userMini > * { width: 44px; height: 44px; }
+    main#view { padding-left: 10px; padding-right: 10px; padding-top: 10px; }
+    .card { border-radius: 14px; box-shadow: none; }
+    .mobile-stat { min-height: 68px; padding: 8px 10px !important; gap: 9px !important; }
+    .mobile-stat > span:first-child { width: 30px !important; height: 30px !important; border-radius: 9px !important; }
+    .mobile-stat b { font-size: 16px !important; line-height: 18px !important; }
+    .mobile-stat .stat-label { font-size: 10px !important; line-height: 14px !important; white-space: normal; }
   }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
@@ -95,19 +112,19 @@
 
 <div class="lg:flex min-h-screen">
   <!-- Thanh bên (máy tính) -->
-  <aside class="hidden lg:flex lg:flex-col w-64 shrink-0 border-r border-line bg-white/70 backdrop-blur px-4 py-6 sticky top-0 h-screen">
-    <a href="#/tong-quan" class="flex items-center gap-3 px-2 mb-8">
+  <aside class="app-side hidden lg:flex lg:flex-col shrink-0 bg-white/90 backdrop-blur px-4 py-5 sticky top-0 z-30">
+    <a href="#/tong-quan" class="side-wordmark flex items-center gap-3 px-1 mb-7">
       <svg viewBox="0 0 192 192" class="size-10 shrink-0" aria-hidden="true"><defs><linearGradient id="lgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7A88F5"/><stop offset="1" stop-color="#5563E0"/></linearGradient></defs><rect width="192" height="192" rx="44" fill="url(#lgA)"/><path d="M40 92 96 44l56 48v58a6 6 0 0 1-6 6H46a6 6 0 0 1-6-6z" fill="#fff"/><path d="M70 112l18 18 34-38" fill="none" stroke="#5563E0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span class="leading-tight"><b class="block text-[15px]">Ứng dụng khai báo cư trú</b><span class="text-xs text-muted">Cơ sở lưu trú</span></span>
+      <span class="side-copy leading-tight"><b class="block text-[15px]">Ứng dụng khai báo cư trú</b><span class="text-xs text-muted">Cơ sở lưu trú</span></span>
     </a>
     <nav id="navSide" class="flex flex-col gap-1"></nav>
     <div class="mt-auto pt-6">
-      <a href="huongdan.html" target="_blank" class="nav-a mb-2"><svg viewBox="0 0 24 24" class="size-[18px]" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.1M12 17h.01"/></svg>Hướng dẫn</a>
+      <a href="huongdan.html" target="_blank" rel="noopener" class="nav-a mb-2"><svg viewBox="0 0 24 24" class="size-[18px]" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.1M12 17h.01"/></svg><span class="side-nav-label">Hướng dẫn</span></a>
       <div id="userBox" class="flex items-center gap-3 p-3 rounded-2xl bg-canvas"></div>
     </div>
   </aside>
 
-  <div class="flex-1 min-w-0">
+  <div class="app-main flex-1 min-w-0">
     <!-- Thanh trên (điện thoại) -->
     <header id="dauMobi" class="lg:hidden sticky top-0 z-30 bg-white/85 backdrop-blur border-b border-line px-4 h-14 flex items-center gap-3 transition-transform duration-200">
       <button id="nutLui" type="button" data-lui hidden class="grid place-items-center size-9 -ml-2 rounded-xl text-ink hover:bg-canvas" aria-label="Quay lại trang trước" title="Quay lại">
@@ -166,8 +183,8 @@
 
 <div id="toasts" class="fixed z-[60] bottom-20 lg:bottom-6 right-4 left-4 sm:left-auto flex flex-col gap-2 items-end pointer-events-none"></div>
 
-<script src="js/config.js?v=2.24.0"></script>
-<script src="js/api.js?v=2.24.0"></script>
-<script src="js/app.js?v=2.24.0"></script>
+<script src="js/config.js?v=2.25.0"></script>
+<script src="js/api.js?v=2.25.0"></script>
+<script src="js/app.js?v=2.25.0"></script>
 </body>
 </html>
