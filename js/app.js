@@ -78,7 +78,8 @@
     more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
     phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
     listcheck: '<path d="M11 6h9M11 12h9M11 18h9"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/>',
-    flask: '<path d="M9 3h6M10 3v6.2L4.8 18a1.5 1.5 0 0 0 1.3 2.2h11.8a1.5 1.5 0 0 0 1.3-2.2L14 9.2V3"/><path d="M7.5 15h9"/>'
+    flask: '<path d="M9 3h6M10 3v6.2L4.8 18a1.5 1.5 0 0 0 1.3 2.2h11.8a1.5 1.5 0 0 0 1.3-2.2L14 9.2V3"/><path d="M7.5 15h9"/>',
+    refresh: '<path d="M20 6v5h-5"/><path d="M18.5 15a7 7 0 1 1-.8-7.8L20 11"/>'
   };
   var ic = function (k, cls) { return '<svg viewBox="0 0 24 24" class="' + (cls || 'size-4') + '" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[k] + '</svg>'; };
 
@@ -128,7 +129,7 @@
     var nDx = duocGhi() ? ((layDem('tongQuan') || {}).deXuatChoDuyet || 0) + ((layDem('tongQuan') || {}).kiemTraChoDuyet || 0) : 0;
     var soDuyet = function (t) { var n = 0; if (t.id === 'can-bo' || t.id === 'quan-tri' || t.id === 'tai-khoan') n += S.soChoDuyet || 0; if (t.id === 'de-xuat' || t.id === 'tai-khoan') n += nDx; return n; };
     var link = function (t) {
-      return '<a class="nav-a" href="#/' + t.id + '"' + (t.id === cur ? ' aria-current="page"' : '') + '>' + ic(t.ic, 'size-[18px]') + '<span class="side-nav-label">' + t.ten + '</span>' + (soDuyet(t) ? '<span class="ml-auto badge bg-rose text-rose-ink">' + soDuyet(t) + '</span>' : '') + '</a>';
+      return '<a class="nav-a" href="#/' + t.id + '"' + (t.id === cur ? ' aria-current="page"' : '') + '>' + ic(t.ic, 'size-[18px] shrink-0') + '<span class="side-nav-label">' + t.ten + '</span>' + (soDuyet(t) ? '<span class="ml-auto badge bg-rose text-rose-ink">' + soDuyet(t) + '</span>' : '') + '</a>';
     };
     $('#navSide').innerHTML = chinh.map(link).join('') +
       (qt.length ? '<p class="side-nav-heading px-3 mt-5 mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted">Quản trị</p>' + qt.map(link).join('') : '');
@@ -179,7 +180,8 @@
         o('privacy.html', 'idcard', 'Chính sách quyền riêng tư', 'Dữ liệu được lưu và bảo vệ thế nào (mở tab mới)', '', true)
       ]) +
       chanDoan +
-      (API.cheDo === 'may-chu' ? '<button type="button" data-dang-xuat class="btn-danger w-full h-12 mt-6">' + ic('out') + 'Đăng xuất</button>' : '') +
+      '<div class="grid ' + (API.cheDo === 'may-chu' ? 'grid-cols-2' : 'grid-cols-1') + ' gap-2 mt-6"><button type="button" data-lam-moi class="btn-soft h-12">' + ic('refresh') + 'Làm mới</button>' +
+      (API.cheDo === 'may-chu' ? '<button type="button" data-dang-xuat class="btn-danger h-12">' + ic('out') + 'Đăng xuất</button>' : '') + '</div>' +
       '<p class="text-center text-xs text-muted mt-4">Phiên bản giao diện ' + PB_GIAO_DIEN + '</p>';
   }
 
@@ -188,9 +190,9 @@
     var ten = u.HoTen || u.CSKV || u.Email;
     var chu = boDau(ten).replace(/[^a-z]/g, '').slice(0, 1).toUpperCase() || '?';
     var quyen = { Admin: 'Quản trị', CanBo: 'Cán bộ', Xem: 'Chỉ xem', LanhDao: 'Lãnh đạo', ChuCoSo: 'Cộng tác viên' }[u.Quyen] || u.Quyen;
-    $('#userBox').innerHTML = '<span class="grid place-items-center size-9 rounded-full bg-peach text-peach-ink font-semibold">' + esc(chu) + '</span>' +
-      '<span class="min-w-0 leading-tight"><b class="block text-sm truncate">' + esc(u.HoTen || '(chưa có họ tên)') + '</b><span class="block text-xs text-muted truncate">' + esc(u.Email) + ' · ' + esc(quyen) + '</span></span>' +
-      (API.cheDo === 'may-chu' ? '<button data-dang-xuat class="btn-ghost btn-sm ml-auto px-2" title="Đăng xuất">' + ic('out') + '</button>' : '');
+    $('#userBox').innerHTML = '<span class="grid place-items-center size-9 shrink-0 rounded-full bg-peach text-peach-ink font-semibold">' + esc(chu) + '</span>' +
+      '<span class="min-w-0 leading-tight"><b class="block text-sm truncate">' + esc(u.HoTen || '(chưa có họ tên)') + '</b><span class="block text-xs text-muted truncate">' + esc(u.Email) + ' · ' + esc(quyen) + '</span></span>';
+    if ($('#sideLogout')) $('#sideLogout').hidden = API.cheDo !== 'may-chu';
     $('#userMini').innerHTML = (API.cheDo === 'may-chu' ? '<button data-dang-xuat class="grid place-items-center size-8 rounded-full bg-peach text-peach-ink text-sm font-semibold" title="' + esc(u.Email) + ' – bấm để đăng xuất">' : '<span class="grid place-items-center size-8 rounded-full bg-peach text-peach-ink text-sm font-semibold" title="' + esc(u.Email) + '">') + esc(chu) + (API.cheDo === 'may-chu' ? '</button>' : '</span>');
   }
 
@@ -3336,6 +3338,17 @@
 
   // ---------- Điều hướng & sự kiện chung ----------
   function lamMoi() { route(); }
+  function lamMoiToanBo(nut) {
+    if (nut && nut.disabled) return;
+    var cacNut = $$('[data-lam-moi]'), cu = nut ? nut.innerHTML : '';
+    cacNut.forEach(function (b) { b.disabled = true; });
+    if (nut) nut.innerHTML = ic('refresh', 'size-[18px] shrink-0 animate-spin') + '<span class="side-nav-label">Đang làm mới…</span>';
+    DEM = {}; DANG_TAI = {}; S.luot = (S.luot || 0) + 1;
+    return vaoHeThong().then(function () { toast('Dữ liệu đã được làm mới.'); }).finally(function () {
+      $$('[data-lam-moi]').forEach(function (b) { b.disabled = false; });
+      if (nut && document.body.contains(nut)) nut.innerHTML = cu;
+    });
+  }
   /** Vẽ lại trang đang xem phía sau ngăn kéo (ví dụ sau "Lưu & thêm người cùng phòng"). */
   function lamMoiNen() { var y = window.scrollY; S.luot = (S.luot || 0) + 1; veTrang(); window.scrollTo(0, y); }
   // Lịch sử trang trong ứng dụng cho nút "Quay lại" (không phụ thuộc lịch sử trình duyệt)
@@ -3604,6 +3617,7 @@
     location.hash = '';
     location.reload();
   }
+  document.addEventListener('click', function (e) { var b = e.target.closest('[data-lam-moi]'); if (b) { e.preventDefault(); lamMoiToanBo(b); } });
   document.addEventListener('click', function (e) { if (e.target.closest('[data-dang-xuat]')) { e.preventDefault(); dangXuat(); } });
 
   // Người đăng nhập Google nhưng chưa có trong CanBoQuanLy: gửi yêu cầu để Admin duyệt
@@ -3649,7 +3663,7 @@
   var daGanRoute = false;
   function vaoHeThong() {
     $('#view').innerHTML = '<div class="py-16 text-center text-sm text-muted">Đang tải dữ liệu…</div>';
-    taoPhien().then(function () { return API.goi('batDau', { kem: ['tongQuan', 'dsCoSo', 'dsTamTru'] }); }).then(function (kq) {
+    return taoPhien().then(function () { return API.goi('batDau', { kem: ['tongQuan', 'dsCoSo', 'dsTamTru'] }); }).then(function (kq) {
       ['tongQuan', 'dsCoSo', 'dsTamTru'].forEach(function (k) { if (kq[k]) datDem(k, kq[k]); });
       S.user = kq.toi; S.dm = kq.danhMuc; S.soChoDuyet = kq.soChoDuyet || 0; S.phamVi = kq.phamVi || { toanPhuong: true };
       $('#loginWrap').hidden = true;
@@ -3685,7 +3699,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.25.0';
+  var PB_GIAO_DIEN = '2.26.0';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
