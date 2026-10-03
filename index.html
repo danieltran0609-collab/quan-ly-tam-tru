@@ -56,12 +56,22 @@
   body { font-feature-settings: "tnum" 1; }
   .app-side { transition: width .3s cubic-bezier(.22,1,.36,1); }
   .app-side .nav-a { white-space: nowrap; }
+  .app-side #navSide { min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+  .app-side #navSide::-webkit-scrollbar { display: none; }
   @media (min-width: 1024px) {
     .app-side { width: 86px; margin: 22px 0 22px 22px; height: calc(100vh - 44px); border: 1px solid rgba(255,255,255,.8); border-radius: 24px; box-shadow: 0 22px 60px rgb(34 55 91 / .12); overflow: hidden; }
     .app-side:hover, .app-side:focus-within { width: 264px; }
     .app-side .side-wordmark, .app-side .nav-a { min-width: 220px; }
+    .app-side .side-wordmark { padding-left: 7px; }
+    .app-side .nav-a { padding-left: 18px; padding-right: 18px; }
+    .app-side #userBox { padding-left: 9px; }
     .app-side .side-copy, .app-side .side-nav-label, .app-side .side-nav-heading, .app-side #userBox > :not(:first-child) { opacity: 0; transition: opacity .16s; }
     .app-side .side-nav-label { pointer-events: none; }
+    .app-side .nav-a .badge { opacity: 0; }
+    .app-side:hover .side-wordmark, .app-side:focus-within .side-wordmark { padding-left: 4px; }
+    .app-side:hover .nav-a, .app-side:focus-within .nav-a { padding-left: 12px; padding-right: 12px; }
+    .app-side:hover #userBox, .app-side:focus-within #userBox { padding-left: 12px; }
+    .app-side:hover .nav-a .badge, .app-side:focus-within .nav-a .badge { opacity: 1; }
     .app-side:hover .side-copy, .app-side:focus-within .side-copy, .app-side:hover .side-nav-label, .app-side:focus-within .side-nav-label, .app-side:hover .side-nav-heading, .app-side:focus-within .side-nav-heading, .app-side:hover #userBox > :not(:first-child), .app-side:focus-within #userBox > :not(:first-child) { opacity: 1; }
     .app-main { padding-left: 20px; }
   }
@@ -118,8 +128,10 @@
       <span class="side-copy leading-tight"><b class="block text-[15px]">Ứng dụng khai báo cư trú</b><span class="text-xs text-muted">Cơ sở lưu trú</span></span>
     </a>
     <nav id="navSide" class="flex flex-col gap-1"></nav>
-    <div class="mt-auto pt-6">
+    <div class="side-footer mt-auto pt-3 shrink-0">
       <a href="huongdan.html" target="_blank" rel="noopener" class="nav-a mb-2"><svg viewBox="0 0 24 24" class="size-[18px]" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.1M12 17h.01"/></svg><span class="side-nav-label">Hướng dẫn</span></a>
+      <button type="button" data-lam-moi class="nav-a w-full mb-1" title="Làm mới dữ liệu"><svg viewBox="0 0 24 24" class="size-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6v5h-5"/><path d="M18.5 15a7 7 0 1 1-.8-7.8L20 11"/></svg><span class="side-nav-label">Làm mới</span></button>
+      <button id="sideLogout" type="button" data-dang-xuat hidden class="nav-a w-full mb-2 text-rose-ink hover:bg-rose" title="Đăng xuất"><svg viewBox="0 0 24 24" class="size-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg><span class="side-nav-label">Đăng xuất</span></button>
       <div id="userBox" class="flex items-center gap-3 p-3 rounded-2xl bg-canvas"></div>
     </div>
   </aside>
@@ -183,8 +195,8 @@
 
 <div id="toasts" class="fixed z-[60] bottom-20 lg:bottom-6 right-4 left-4 sm:left-auto flex flex-col gap-2 items-end pointer-events-none"></div>
 
-<script src="js/config.js?v=2.25.0"></script>
-<script src="js/api.js?v=2.25.0"></script>
-<script src="js/app.js?v=2.25.0"></script>
+<script src="js/config.js?v=2.26.0"></script>
+<script src="js/api.js?v=2.26.0"></script>
+<script src="js/app.js?v=2.26.0"></script>
 </body>
 </html>
