@@ -184,7 +184,7 @@
       ] : [
         duocGhi() ? o('#/viec-can-lam', 'vieclam', 'Việc cần làm', 'Duyệt đề xuất của cộng tác viên, người sắp hết hạn, dữ liệu cần bổ sung', nDx ? '<span class="badge bg-rose text-rose-ink shrink-0">' + nDx + ' chờ duyệt</span>' : '') : '',
         duocGhi() && coQ('quan_ly_ctv') ? o('#/chu-co-so', 'users', 'Cộng tác viên', 'Tạo tài khoản cho chủ nhà trọ, khách sạn hỗ trợ đăng ký khách') : '',
-        duocGhi() && coQ('quan_ly_ctv') ? o('#/phan-quyen', 'khoa', 'Phân quyền', laAdmin() ? 'Tích chọn quyền cho cán bộ và cộng tác viên' : 'Tích chọn quyền cho cộng tác viên của bạn') : '',
+        duocGhi() && coQ('quan_ly_ctv') ? o('#/phan-quyen', 'khoa', 'Phân quyền', laAdmin() ? 'Tích chọn quyền cho cán bộ, lãnh đạo, tài khoản theo dõi và cộng tác viên' : 'Tích chọn quyền cho cộng tác viên của bạn') : '',
         laAdmin() ? o('#/can-bo', 'shield', 'Cán bộ quản lý', 'Duyệt yêu cầu truy cập, phân quyền, gán CSKV', S.soChoDuyet ? '<span class="badge bg-rose text-rose-ink shrink-0">' + S.soChoDuyet + ' chờ duyệt</span>' : '') : '',
         duocGhi() ? o('#/bo-sung', 'alert', 'Bổ sung dữ liệu cơ sở', 'Cơ sở thiếu số điện thoại, số phòng, đăng ký kinh doanh…') : '',
         laAdmin() || laLanhDao() ? o('#/du-lieu-thu', 'flask', 'Dữ liệu thử', 'Tự tạo cơ sở, khách để thử hệ thống, không tính vào thống kê') : '',
@@ -1957,10 +1957,11 @@
 
   // ================= PHÂN QUYỀN TÍCH CHỌN (Admin → Cán bộ → Cộng tác viên) =================
   var NHOM_Q = ['Xem & báo cáo', 'Công dân', 'Cơ sở', 'Duyệt & tài khoản', 'Hệ thống'];
-  var TEN_VAI = { CanBo: 'Cán bộ', ChuCoSo: 'Cộng tác viên' };
+  var TEN_VAI = { CanBo: 'Cán bộ', LanhDao: 'Lãnh đạo', Xem: 'Cán bộ theo dõi (Xem)', ChuCoSo: 'Cộng tác viên' };
+  var COT_VAI = { CanBo: ['cb', 'cbMD'], LanhDao: ['ld', 'ldMD'], Xem: ['xem', 'xemMD'], ChuCoSo: ['ctv', 'ctvMD'] };
   function trangPhanQuyen() {
     var v = $('#view'), luot = S.luot;
-    v.innerHTML = dauTrang('Phân quyền', laAdmin() ? 'Tích chọn quyền cho cán bộ và cộng tác viên' : 'Tích chọn quyền cho cộng tác viên của bạn') + '<div id="pqND">' + khungCho(3) + '</div>';
+    v.innerHTML = dauTrang('Phân quyền', laAdmin() ? 'Tích chọn quyền cho cán bộ, lãnh đạo, tài khoản theo dõi và cộng tác viên' : 'Tích chọn quyền cho cộng tác viên của bạn') + '<div id="pqND">' + khungCho(3) + '</div>';
     docNhanh('dsPQ', 'dsPhanQuyen', {}).then(function (x) {
       if (luot !== S.luot || !$('#pqND')) return;
       S.pq = x; vePQ();
@@ -1970,7 +1971,7 @@
   function vePQ() {
     var x = S.pq; if (!x || !$('#pqND')) return;
     var tab = S.pqTab || 'tich';
-    var dm = x.danhMuc, cot = function (vai) { return dm.filter(function (q) { return vai === 'CanBo' ? q.cb : q.ctv; }); };
+    var dm = x.danhMuc, cot = function (vai) { return dm.filter(function (q) { return q[COT_VAI[vai][0]]; }); };
     var nhomTK = function (vai) { return x.tk.filter(function (a) { return a.Quyen === vai; }); };
     var dsTheoVai = function (vai) {
       var l = nhomTK(vai);
@@ -1989,17 +1990,17 @@
         l.map(function (a) { return '<tr class="border-t border-line"><td class="td sticky left-0 bg-white whitespace-nowrap"><button type="button" data-pq-sua="' + esc(a.MaCanBo) + '" class="text-left text-brand-600 hover:underline">' + esc(a.HoTen || a.Email) + '</button></td>' +
           c.map(function (q) { return '<td class="td text-center">' + oTick(a.hieuLuc.indexOf(q.k) >= 0) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div></section>';
     };
-    var theoVai = '<section class="card overflow-hidden mb-3 lg:mb-5"><div class="overflow-x-auto scroll-thin"><table class="w-full text-sm"><thead><tr><th class="th">Quyền</th><th class="th text-center">Admin</th><th class="th text-center">Cán bộ<span class="block text-xs font-normal text-muted">mặc định</span></th><th class="th text-center">Cộng tác viên<span class="block text-xs font-normal text-muted">mặc định</span></th><th class="th text-center">Lãnh đạo / Xem</th></tr></thead><tbody>' +
+    var theoVai = '<section class="card overflow-hidden mb-3 lg:mb-5"><div class="overflow-x-auto scroll-thin"><table class="w-full text-sm"><thead><tr><th class="th">Quyền</th><th class="th text-center">Admin</th><th class="th text-center">Cán bộ<span class="block text-xs font-normal text-muted">mặc định</span></th><th class="th text-center">Cộng tác viên<span class="block text-xs font-normal text-muted">mặc định</span></th><th class="th text-center">Lãnh đạo<span class="block text-xs font-normal text-muted">mặc định</span></th><th class="th text-center">Theo dõi (Xem)<span class="block text-xs font-normal text-muted">mặc định</span></th></tr></thead><tbody>' +
       NHOM_Q.map(function (n) {
         var q = dm.filter(function (z) { return z.nhom === n; }); if (!q.length) return '';
-        return '<tr class="bg-canvas"><td colspan="5" class="td text-xs font-semibold uppercase tracking-wide text-muted">' + esc(n) + '</td></tr>' + q.map(function (z) {
+        return '<tr class="bg-canvas"><td colspan="6" class="td text-xs font-semibold uppercase tracking-wide text-muted">' + esc(n) + '</td></tr>' + q.map(function (z) {
           return '<tr class="border-t border-line"><td class="td">' + esc(z.nhan) + (z.nhay ? ' <span class="badge bg-rose text-rose-ink">Nhạy cảm</span>' : '') + '</td><td class="td text-center">' + oTick(true) + '</td>' +
-            '<td class="td text-center">' + (z.cb ? oTick(!!z.cbMD) : '<span class="text-muted">n/a</span>') + '</td><td class="td text-center">' + (z.ctv ? oTick(!!z.ctvMD) : '<span class="text-muted">n/a</span>') + '</td><td class="td text-center text-muted">' + (/^xem_|tra_cuu/.test(z.k) ? '✓ (đọc)' : '–') + '</td></tr>';
+            '<td class="td text-center">' + (z.cb ? oTick(!!z.cbMD) : '<span class="text-muted">n/a</span>') + '</td><td class="td text-center">' + (z.ctv ? oTick(!!z.ctvMD) : '<span class="text-muted">n/a</span>') + '</td><td class="td text-center">' + (z.ld ? oTick(!!z.ldMD) : '<span class="text-muted">n/a</span>') + '</td><td class="td text-center">' + (z.xem ? oTick(!!z.xemMD) : '<span class="text-muted">n/a</span>') + '</td></tr>';
         }).join('');
       }).join('') + '</tbody></table></div><p class="px-4 sm:px-5 py-3 text-xs text-muted border-t border-line"><b>Chỉ Admin</b> (không cấp được cho vai khác): quản lý cán bộ, duyệt yêu cầu truy cập, chính sách dữ liệu, cập nhật trạng thái, phê duyệt kiểm tra cơ sở, gán cán bộ phụ trách cho cộng tác viên. Địa bàn (CSKV / Tổ) vẫn do Admin gán riêng; bảng này chỉ quyết định “được làm việc gì”. n/a = quyền không áp dụng cho vai đó.</p></section>';
     $('#pqND').innerHTML = '<div class="flex gap-2 items-start rounded-2xl bg-sky text-sky-ink px-4 py-3 text-sm mb-3">' + ic('khoa', 'size-4 mt-0.5 shrink-0') + '<span>Bạn chỉ cấp được quyền <b>chính mình có</b>. Khi cán bộ mất một quyền, cộng tác viên do họ phụ trách cũng mất quyền đó. Mọi thay đổi được ghi vào Lịch sử.</span></div>' +
       '<div class="card px-3 sm:px-4 pt-1 mb-3">' + thanhTab('data-pq-tab', [['tich', 'Tích chọn', x.tk.length], ['bang', 'Bảng tổng hợp'], ['vai', 'Quyền theo vai trò']], tab) + '<div class="pb-2"></div></div>' +
-      (tab === 'tich' ? (laAdmin() ? dsTheoVai('CanBo') : '') + dsTheoVai('ChuCoSo') : tab === 'bang' ? (laAdmin() ? bangTH('CanBo') : '') + bangTH('ChuCoSo') : theoVai);
+      (tab === 'tich' ? (laAdmin() ? dsTheoVai('CanBo') + dsTheoVai('LanhDao') + dsTheoVai('Xem') : '') + dsTheoVai('ChuCoSo') : tab === 'bang' ? (laAdmin() ? bangTH('CanBo') + bangTH('LanhDao') + bangTH('Xem') : '') + bangTH('ChuCoSo') : theoVai);
   }
   /** Ngăn kéo tích chọn quyền cho một tài khoản. */
   function formPQ(ma) {
@@ -2013,7 +2014,7 @@
           var cap = a.coTheCap.indexOf(z.k) >= 0, co = a.hieuLuc.indexOf(z.k) >= 0;
           return '<label class="flex items-start gap-3 px-3 py-2.5 rounded-xl border border-line ' + (cap ? 'cursor-pointer hover:bg-canvas/60' : 'opacity-60') + '"><input type="checkbox" name="q" value="' + esc(z.k) + '" class="mt-0.5 size-5 shrink-0 accent-[#6C7BF2]"' + (co ? ' checked' : '') + (cap ? '' : ' disabled') + '>' +
             '<span class="min-w-0 text-sm"><span class="block">' + esc(z.nhan) + '</span><span class="flex flex-wrap gap-1 mt-1">' +
-            ((a.Quyen === 'CanBo' ? z.cbMD : z.ctvMD) ? '<span class="badge bg-fog text-fog-ink">Mặc định</span>' : '<span class="badge bg-sky text-sky-ink">Ngoài mặc định</span>') + (z.nhay ? '<span class="badge bg-rose text-rose-ink">Nhạy cảm</span>' : '') +
+            (z[COT_VAI[a.Quyen][1]] ? '<span class="badge bg-fog text-fog-ink">Mặc định</span>' : '<span class="badge bg-sky text-sky-ink">Ngoài mặc định</span>') + (z.nhay ? '<span class="badge bg-rose text-rose-ink">Nhạy cảm</span>' : '') +
             (cap ? '' : '<span class="badge bg-butter text-butter-ink">Bạn không có quyền này nên không cấp được</span>') + '</span></span></label>';
         }).join('') + '</div></fieldset>';
       }).join('') + '</form>' +
@@ -3876,7 +3877,7 @@
 
   // Tự cập nhật: GitHub Pages cho trình duyệt giữ trang cũ ~10 phút. So phiên bản với version.json (không đệm),
   // khác thì tải lại bằng URL mới (?v=...) để lấy index.html mới. Không tải lại khi đang mở form/ngăn kéo.
-  var PB_GIAO_DIEN = '2.34.0';
+  var PB_GIAO_DIEN = '2.35.0';
   function kiemTraBanMoi() {
     if (API.cheDo !== 'may-chu') return;
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
